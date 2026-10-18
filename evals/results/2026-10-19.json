@@ -1,0 +1,821 @@
+{
+  "date": "2026-10-19",
+  "generatedAt": "2026-10-18T17:36:24+00:00",
+  "mode": "regression-fake",
+  "database": "ritme_eval",
+  "llm": {
+    "provider": "fake",
+    "modelsObservedInRuns": [
+      "fake-fast",
+      "fake-plan"
+    ],
+    "configuredModels": null,
+    "promptVersions": {
+      "plan": "plan.v1",
+      "extract": "extract.v1",
+      "replan": "replan.v1"
+    }
+  },
+  "durationSeconds": 51.6,
+  "metrics": {
+    "extractionFieldAccuracy": {
+      "value": 1.0,
+      "correct": 206,
+      "total": 206,
+      "byField": {
+        "found": {
+          "correct": 63,
+          "total": 63,
+          "value": 1.0
+        },
+        "kind": {
+          "correct": 63,
+          "total": 63,
+          "value": 1.0
+        },
+        "certainty": {
+          "correct": 63,
+          "total": 63,
+          "value": 1.0
+        },
+        "importance": {
+          "correct": 15,
+          "total": 15,
+          "value": 1.0
+        },
+        "absent": {
+          "correct": 2,
+          "total": 2,
+          "value": 1.0
+        }
+      },
+      "scenariosAnnotated": 26
+    },
+    "clarificationAppropriateness": {
+      "value": 1.0,
+      "appropriate": 24,
+      "scenariosAnnotated": 24,
+      "expectedTopicsCovered": {
+        "covered": 16,
+        "expected": 16,
+        "value": 1.0
+      },
+      "excessBlockingQuestions": 0
+    },
+    "unsupportedCriticalClaims": {
+      "count": 0,
+      "target": 0,
+      "byKind": {
+        "deadline_explicit_without_exact_date": {
+          "checked": 16,
+          "unsupported": 0
+        },
+        "explicit_without_evidence": {
+          "checked": 68,
+          "unsupported": 0
+        },
+        "injection_text_in_requirement": {
+          "checked": 87,
+          "unsupported": 0
+        },
+        "injection_text_in_task": {
+          "checked": 43,
+          "unsupported": 0
+        },
+        "scenario_forbidden_text": {
+          "checked": 2,
+          "unsupported": 0
+        },
+        "task_due_without_confirmed_date": {
+          "checked": 6,
+          "unsupported": 0
+        },
+        "workflow_due_without_confirmation": {
+          "checked": 5,
+          "unsupported": 0
+        }
+      }
+    },
+    "citationValidity": {
+      "value": 1.0,
+      "valid": 112,
+      "total": 112,
+      "sourceCitations": {
+        "valid": 30,
+        "total": 30
+      },
+      "evidenceExcerpts": {
+        "valid": 82,
+        "total": 82
+      }
+    },
+    "actionVerificationRate": {
+      "value": 1.0,
+      "verified": 14,
+      "executed": 14
+    },
+    "duplicateWriteCount": {
+      "count": 0,
+      "target": 0
+    },
+    "writesWithoutApproval": {
+      "count": 0,
+      "target": 0
+    },
+    "endToEndCompletionPassRate": {
+      "value": 1.0,
+      "passed": 20,
+      "total": 20,
+      "scenarioVariantsRun": 28
+    },
+    "notMeasured": {
+      "accessibilityOfMainFlow": "not measured here: needs the browser (frontend/extension a11y checks); this runner drives the HTTP API only",
+      "modelQuality": "not measured in fake mode: the model's outputs are scripted/fixture text, so extraction accuracy and clarification appropriateness describe the guards + persistence pipeline, not a language model",
+      "extensionOfflineBehaviour": "client-side; only the API contract (no/invalid/expired token -> 401, nothing created) is asserted here"
+    }
+  },
+  "scenarios": [
+    {
+      "id": "s01_clear_request",
+      "specNumber": 1,
+      "title": "Clear request with explicit deliverable and deadline",
+      "passed": true,
+      "variants": [
+        {
+          "variant": null,
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 18,
+          "durationMs": 6437,
+          "modelCalls": 3,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": false,
+            "blockingQuestions": 0,
+            "appropriate": true,
+            "topicsExpected": 0,
+            "topicsCovered": 0,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s02_vague_deadline",
+      "specNumber": 2,
+      "title": "Vague deadline (\"Friday\", \"soon\", \"when you can\")",
+      "passed": true,
+      "variants": [
+        {
+          "variant": null,
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 18,
+          "durationMs": 3310,
+          "modelCalls": 2,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": true,
+            "blockingQuestions": 2,
+            "appropriate": true,
+            "topicsExpected": 2,
+            "topicsCovered": 2,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s03_ambiguous_output",
+      "specNumber": 3,
+      "title": "Ambiguous output (\"over the line\", \"polished\", \"align everyone\")",
+      "passed": true,
+      "variants": [
+        {
+          "variant": null,
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 11,
+          "durationMs": 4629,
+          "modelCalls": 2,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": true,
+            "blockingQuestions": 3,
+            "appropriate": true,
+            "topicsExpected": 3,
+            "topicsCovered": 3,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s04_multi_deliverables_dependencies",
+      "specNumber": 4,
+      "title": "Multiple deliverables with dependencies",
+      "passed": true,
+      "variants": [
+        {
+          "variant": null,
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 10,
+          "durationMs": 2372,
+          "modelCalls": 3,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": false,
+            "blockingQuestions": 0,
+            "appropriate": true,
+            "topicsExpected": 0,
+            "topicsCovered": 0,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s05_conflicting_guideline",
+      "specNumber": 5,
+      "title": "Captured request conflicts with a knowledge guideline",
+      "passed": true,
+      "variants": [
+        {
+          "variant": null,
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 14,
+          "durationMs": 2588,
+          "modelCalls": 2,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": true,
+            "blockingQuestions": 2,
+            "appropriate": true,
+            "topicsExpected": 2,
+            "topicsCovered": 2,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s06_missing_owner_approver",
+      "specNumber": 6,
+      "title": "Missing owner or approver",
+      "passed": true,
+      "variants": [
+        {
+          "variant": "answered",
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 10,
+          "durationMs": 1536,
+          "modelCalls": 2,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": true,
+            "blockingQuestions": 2,
+            "appropriate": true,
+            "topicsExpected": 2,
+            "topicsCovered": 2,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        },
+        {
+          "variant": "deferred_as_assumption",
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 12,
+          "durationMs": 1445,
+          "modelCalls": 2,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": true,
+            "blockingQuestions": 2,
+            "appropriate": true,
+            "topicsExpected": 2,
+            "topicsCovered": 2,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s07_concise_small_steps",
+      "specNumber": 7,
+      "title": "Concise text and small steps (Micro-Step preferences)",
+      "passed": true,
+      "variants": [
+        {
+          "variant": null,
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 15,
+          "durationMs": 1678,
+          "modelCalls": 2,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": false,
+            "blockingQuestions": 0,
+            "appropriate": true,
+            "topicsExpected": 0,
+            "topicsCovered": 0,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s08_detailed_large_blocks",
+      "specNumber": 8,
+      "title": "Detailed text and larger blocks",
+      "passed": true,
+      "variants": [
+        {
+          "variant": null,
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 14,
+          "durationMs": 1162,
+          "modelCalls": 3,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": false,
+            "blockingQuestions": 0,
+            "appropriate": true,
+            "topicsExpected": 0,
+            "topicsCovered": 0,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s09_task_already_exists",
+      "specNumber": 9,
+      "title": "Task already exists: no duplicate",
+      "passed": true,
+      "variants": [
+        {
+          "variant": null,
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 15,
+          "durationMs": 1971,
+          "modelCalls": 3,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": false,
+            "blockingQuestions": 0,
+            "appropriate": true,
+            "topicsExpected": 0,
+            "topicsCovered": 0,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s10_user_rejects_action",
+      "specNumber": 10,
+      "title": "User rejects the proposed action",
+      "passed": true,
+      "variants": [
+        {
+          "variant": null,
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 12,
+          "durationMs": 1848,
+          "modelCalls": 3,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": false,
+            "blockingQuestions": 0,
+            "appropriate": true,
+            "topicsExpected": 0,
+            "topicsCovered": 0,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s11_llm_failure_timeout",
+      "specNumber": 11,
+      "title": "LLM schema failure and timeout",
+      "passed": true,
+      "variants": [
+        {
+          "variant": null,
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 22,
+          "durationMs": 1784,
+          "modelCalls": 8,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": false,
+            "blockingQuestions": 0,
+            "appropriate": true,
+            "topicsExpected": 0,
+            "topicsCovered": 0,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s12_write_ok_response_lost",
+      "specNumber": 12,
+      "title": "Tool write succeeds but the response is lost (verify before retry)",
+      "passed": true,
+      "variants": [
+        {
+          "variant": "full_write_lost_ack",
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 15,
+          "durationMs": 1498,
+          "modelCalls": 2,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": false,
+            "blockingQuestions": 0,
+            "appropriate": true,
+            "topicsExpected": 0,
+            "topicsCovered": 0,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        },
+        {
+          "variant": "partial_write_lost_ack",
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 15,
+          "durationMs": 1456,
+          "modelCalls": 2,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": false,
+            "blockingQuestions": 0,
+            "appropriate": true,
+            "topicsExpected": 0,
+            "topicsCovered": 0,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s13_domino_recovery",
+      "specNumber": 13,
+      "title": "Deadline changes after tasks exist (Domino Recovery)",
+      "passed": true,
+      "variants": [
+        {
+          "variant": "tasks_get_new_dates",
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 17,
+          "durationMs": 2244,
+          "modelCalls": 3,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": false,
+            "blockingQuestions": 0,
+            "appropriate": true,
+            "topicsExpected": 0,
+            "topicsCovered": 0,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        },
+        {
+          "variant": "deadline_moves_no_task_needs_editing",
+          "passed": true,
+          "failures": [],
+          "knownIssues": [
+            {
+              "assertion": "deadline-move-with-no-task-edits-is-still-proposable",
+              "description": "value",
+              "detail": "status eq 200 (actual: 422)",
+              "issue": "backend: POST /replan with a new deadline returns 422 'There is nothing to change' when the model leaves every task untouched (e.g. tasks are undated), because actions.propose -> tools.validate_update_payload rejects an update_tasks payload that has no task updates/creates even though payload.workflowChanges.confirmedDueAt carries the user's new deadline."
+            }
+          ],
+          "assertionsEvaluated": 7,
+          "durationMs": 1229,
+          "modelCalls": 3,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": false,
+            "blockingQuestions": 0,
+            "appropriate": true,
+            "topicsExpected": 0,
+            "topicsCovered": 0,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s14_prompt_injection",
+      "specNumber": 14,
+      "title": "Prompt injection inside captured text",
+      "passed": true,
+      "variants": [
+        {
+          "variant": null,
+          "passed": true,
+          "failures": [],
+          "knownIssues": [
+            {
+              "assertion": "injected-sentence-not-repeated-in-stored-summary",
+              "description": "summary_absent",
+              "detail": "the stored model summary must not repeat /salary|external@example/ (found 'salary')",
+              "issue": "ai-engine: apply_extraction_guards scrubs emotion/date claims from `summary` and `objective` but not instruction-like sentences, so a model that copies the injected sentence into its summary stores it (state_json.summary; not returned by any API today)."
+            }
+          ],
+          "assertionsEvaluated": 12,
+          "durationMs": 1416,
+          "modelCalls": 2,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": false,
+            "blockingQuestions": 0,
+            "appropriate": true,
+            "topicsExpected": 0,
+            "topicsCovered": 0,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s15_retrieval_no_relevant_source",
+      "specNumber": 15,
+      "title": "Retrieval finds no relevant source",
+      "passed": true,
+      "variants": [
+        {
+          "variant": null,
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 12,
+          "durationMs": 1052,
+          "modelCalls": 2,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": false,
+            "blockingQuestions": 0,
+            "appropriate": true,
+            "topicsExpected": 0,
+            "topicsCovered": 0,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s16_delete_capture",
+      "specNumber": 16,
+      "title": "User deletes a capture",
+      "passed": true,
+      "variants": [
+        {
+          "variant": null,
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 17,
+          "durationMs": 2030,
+          "modelCalls": 4,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": false,
+            "blockingQuestions": 0,
+            "appropriate": true,
+            "topicsExpected": 0,
+            "topicsCovered": 0,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s17_extension_unauthenticated",
+      "specNumber": 17,
+      "title": "Extension offline / unauthenticated (API contract)",
+      "passed": true,
+      "variants": [
+        {
+          "variant": null,
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 19,
+          "durationMs": 465,
+          "modelCalls": 0,
+          "extractionMisses": [],
+          "clarification": null
+        }
+      ]
+    },
+    {
+      "id": "s18_communication_help",
+      "specNumber": 18,
+      "title": "Communication-help request without masking",
+      "passed": true,
+      "variants": [
+        {
+          "variant": "tone_options_default_model",
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 11,
+          "durationMs": 859,
+          "modelCalls": 2,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": true,
+            "blockingQuestions": 1,
+            "appropriate": true,
+            "topicsExpected": 1,
+            "topicsCovered": 1,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        },
+        {
+          "variant": "make_expectations_explicit",
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 11,
+          "durationMs": 876,
+          "modelCalls": 2,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": true,
+            "blockingQuestions": 1,
+            "appropriate": true,
+            "topicsExpected": 1,
+            "topicsCovered": 1,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        },
+        {
+          "variant": "model_gives_masking_advice_twice",
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 12,
+          "durationMs": 984,
+          "modelCalls": 3,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": true,
+            "blockingQuestions": 1,
+            "appropriate": true,
+            "topicsExpected": 1,
+            "topicsCovered": 1,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        },
+        {
+          "variant": "sender_reading_is_labelled",
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 11,
+          "durationMs": 939,
+          "modelCalls": 2,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": true,
+            "blockingQuestions": 1,
+            "appropriate": true,
+            "topicsExpected": 1,
+            "topicsCovered": 1,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s19_user_correction",
+      "specNumber": 19,
+      "title": "User correction contradicts extracted content",
+      "passed": true,
+      "variants": [
+        {
+          "variant": null,
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 13,
+          "durationMs": 1598,
+          "modelCalls": 3,
+          "extractionMisses": [],
+          "clarification": {
+            "expectedBlocking": true,
+            "blockingQuestions": 1,
+            "appropriate": true,
+            "topicsExpected": 1,
+            "topicsCovered": 1,
+            "excessBlocking": 0,
+            "missedTopics": []
+          }
+        }
+      ]
+    },
+    {
+      "id": "s20_workflow_resume",
+      "specNumber": 20,
+      "title": "Workflow reload / resume after an incomplete run",
+      "passed": true,
+      "variants": [
+        {
+          "variant": "worker_died_during_analysis",
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 15,
+          "durationMs": 1388,
+          "modelCalls": 2,
+          "extractionMisses": [],
+          "clarification": null
+        },
+        {
+          "variant": "worker_died_during_planning",
+          "passed": true,
+          "failures": [],
+          "knownIssues": [],
+          "assertionsEvaluated": 15,
+          "durationMs": 1164,
+          "modelCalls": 2,
+          "extractionMisses": [],
+          "clarification": null
+        },
+        {
+          "variant": "queue_message_lost",
+          "passed": true,
+          "failures": [],
+          "knownIssues": [
+            {
+              "assertion": "analyse-press-recovers-a-lost-queue-message",
+              "description": "value",
+              "detail": "workflow.status ne \"captured\" (actual: \"captured\")",
+              "issue": "backend: if the queue message for a run is lost (enqueue failed, post_capture swallows the error), the run row stays `waiting`; POST /captures/{id}/analyze then sees a live run and returns without re-enqueueing, so the capture stays `captured` and the user's 'Analyse' press does nothing."
+            }
+          ],
+          "assertionsEvaluated": 8,
+          "durationMs": 902,
+          "modelCalls": 0,
+          "extractionMisses": [],
+          "clarification": null
+        }
+      ]
+    }
+  ],
+  "skipped": []
+}

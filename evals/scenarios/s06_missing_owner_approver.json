@@ -1,0 +1,230 @@
+{
+  "id": "s06_missing_owner_approver",
+  "specNumber": 6,
+  "title": "Missing owner or approver",
+  "description": "No owner is ever inferred from tone or context: a model-guessed approver is demoted to a labelled assumption and the approver question blocks.",
+  "synthetic": true,
+  "capture": {
+    "contentText": "Hi, the vendor contract needs sign-off before the call. Someone should confirm the pricing with legal first.",
+    "sourcePageTitle": "Vendor contract"
+  },
+  "llm": {
+    "extract": {
+      "then": {
+        "suggestedTitle": "Vendor contract sign-off",
+        "objective": "Get the vendor contract signed off.",
+        "requirements": [
+          {
+            "id": "r1",
+            "kind": "objective",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "Get the vendor contract signed off.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "the vendor contract needs sign-off"
+              }
+            ]
+          },
+          {
+            "id": "r2",
+            "kind": "instruction",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "Confirm the pricing with legal first.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "confirm the pricing with legal first"
+              }
+            ]
+          },
+          {
+            "id": "r3",
+            "kind": "unknown",
+            "certainty": "unknown",
+            "importance": "blocking",
+            "text": "Who approves the contract and who confirms the pricing with legal is not stated.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "Someone should confirm"
+              }
+            ]
+          },
+          {
+            "id": "r4",
+            "kind": "owner",
+            "certainty": "inferred",
+            "importance": "blocking",
+            "text": "Sam, the sender's manager, approves the contract.",
+            "evidence": []
+          },
+          {
+            "id": "r5",
+            "kind": "deadline",
+            "certainty": "unknown",
+            "importance": "blocking",
+            "text": "The date of the call is not stated.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "before the call"
+              }
+            ]
+          }
+        ],
+        "questions": [
+          {
+            "id": "q1",
+            "question": "Who needs to approve the vendor contract, and who confirms the pricing with legal?",
+            "whyItMatters": "The plan needs an approver and an owner.",
+            "blocking": true,
+            "relatedRequirementIds": [
+              "r3",
+              "r4"
+            ]
+          },
+          {
+            "id": "q2",
+            "question": "When is the call?",
+            "whyItMatters": "It sets the deadline.",
+            "blocking": true,
+            "relatedRequirementIds": [
+              "r5"
+            ]
+          }
+        ],
+        "summary": "Contract needs sign-off and a legal pricing check; approver and call date are not stated.",
+        "confidenceNotes": []
+      }
+    }
+  },
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "needs sign-off",
+          "kind": "objective",
+          "certainty": "explicit"
+        },
+        {
+          "match": "Who approves",
+          "kind": "unknown",
+          "certainty": "unknown",
+          "importance": "blocking"
+        },
+        {
+          "match": "Sam, the sender",
+          "kind": "assumption",
+          "certainty": "inferred"
+        }
+      ]
+    },
+    "clarification": {
+      "blocking": true,
+      "topics": [
+        "approve",
+        "call|date"
+      ]
+    }
+  },
+  "variants": [
+    {
+      "name": "answered",
+      "override": {
+        "steps": [
+          {
+            "do": "answer",
+            "answer": "Dana Whitfield approves; Priya confirms pricing with legal",
+            "due": "+4d"
+          }
+        ]
+      }
+    },
+    {
+      "name": "deferred_as_assumption",
+      "override": {
+        "steps": [
+          {
+            "do": "defer",
+            "label": "Assuming the team lead approves."
+          }
+        ],
+        "extraAssertions": [
+          {
+            "check": "requirement",
+            "snap": "final",
+            "count": {
+              "min": 1
+            },
+            "certainty": "inferred",
+            "confirmed": false,
+            "match": "Assuming the team lead approves",
+            "id": "deferral-is-a-labelled-unconfirmed-assumption"
+          },
+          {
+            "check": "question",
+            "snap": "final",
+            "count": {
+              "min": 2
+            },
+            "status": "deferred",
+            "id": "deferred-questions-recorded"
+          }
+        ]
+      }
+    }
+  ],
+  "steps": [],
+  "assertions": [
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "needs_input"
+    },
+    {
+      "check": "requirement",
+      "snap": "initial",
+      "count": {
+        "eq": 0
+      },
+      "fakeOnly": true,
+      "kind": "owner",
+      "id": "no-inferred-owner-requirement"
+    },
+    {
+      "check": "requirement",
+      "snap": "initial",
+      "count": {
+        "eq": 1
+      },
+      "fakeOnly": true,
+      "kind": "assumption",
+      "certainty": "inferred",
+      "match": "Sam, the sender",
+      "id": "guessed-owner-demoted-to-assumption"
+    },
+    {
+      "check": "question",
+      "snap": "initial",
+      "count": {
+        "min": 1
+      },
+      "blocking": true,
+      "match": "approve",
+      "id": "approver-question-blocks"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "ready_for_approval",
+      "id": "plan-after-resolution"
+    }
+  ]
+}

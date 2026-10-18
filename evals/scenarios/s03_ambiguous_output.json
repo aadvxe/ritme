@@ -1,0 +1,272 @@
+{
+  "id": "s03_ambiguous_output",
+  "specNumber": 3,
+  "title": "Ambiguous output (\"over the line\", \"polished\", \"align everyone\")",
+  "description": "Undefined acceptance criteria become blocking questions; a feeling stated as fact by the model is removed.",
+  "synthetic": true,
+  "capture": {
+    "contentText": "Hey, can you get the onboarding deck over the line? Make it polished and align everyone before it goes out.",
+    "sourcePageTitle": "Onboarding deck"
+  },
+  "llm": {
+    "extract": {
+      "then": {
+        "suggestedTitle": "Finish and send the onboarding deck",
+        "objective": "Get the onboarding deck finished and sent.",
+        "requirements": [
+          {
+            "id": "r1",
+            "kind": "objective",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "Get the onboarding deck over the line.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "get the onboarding deck over the line"
+              }
+            ]
+          },
+          {
+            "id": "r2",
+            "kind": "deliverable",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "The deliverable is the onboarding deck.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "the onboarding deck"
+              }
+            ]
+          },
+          {
+            "id": "r3",
+            "kind": "acceptance_criterion",
+            "certainty": "unknown",
+            "importance": "blocking",
+            "text": "\"Over the line\" is not defined: no completion criteria are stated.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "over the line"
+              }
+            ]
+          },
+          {
+            "id": "r4",
+            "kind": "acceptance_criterion",
+            "certainty": "unknown",
+            "importance": "blocking",
+            "text": "\"Polished\" is not defined.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "Make it polished"
+              }
+            ]
+          },
+          {
+            "id": "r5",
+            "kind": "instruction",
+            "certainty": "unknown",
+            "importance": "blocking",
+            "text": "Who \"everyone\" is, and what counts as aligned, is not stated.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "align everyone"
+              }
+            ]
+          },
+          {
+            "id": "r6",
+            "kind": "fact",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "The sender is frustrated that the deck is late.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "over the line"
+              }
+            ]
+          }
+        ],
+        "questions": [
+          {
+            "id": "q1",
+            "question": "What has to be true for the deck to count as \"over the line\"?",
+            "whyItMatters": "The plan needs a definition of done.",
+            "blocking": true,
+            "relatedRequirementIds": [
+              "r3"
+            ]
+          },
+          {
+            "id": "q2",
+            "question": "What does \"polished\" mean here: design, wording, review?",
+            "whyItMatters": "It sets how much work is left.",
+            "blocking": true,
+            "relatedRequirementIds": [
+              "r4"
+            ]
+          },
+          {
+            "id": "q3",
+            "question": "Who needs to be aligned, and what counts as aligned?",
+            "whyItMatters": "The plan needs to know who confirms.",
+            "blocking": true,
+            "relatedRequirementIds": [
+              "r5"
+            ]
+          }
+        ],
+        "summary": "You were asked to finish the onboarding deck and align people. Three terms are not defined.",
+        "confidenceNotes": []
+      }
+    },
+    "plan": {
+      "then": {
+        "goal": "Finish and send the onboarding deck",
+        "tasks": [
+          {
+            "draftId": "t1",
+            "title": "Finish the onboarding deck content",
+            "description": "",
+            "definitionOfDone": "The deck has no empty slides",
+            "dependsOnDraftIds": [],
+            "requirementIds": [
+              "r1",
+              "r2"
+            ],
+            "estimatedMinutes": 60
+          },
+          {
+            "draftId": "t2",
+            "title": "Polish the deck",
+            "description": "",
+            "definitionOfDone": "Wording and layout are checked",
+            "dependsOnDraftIds": [
+              "t1"
+            ],
+            "requirementIds": [
+              "r4"
+            ],
+            "estimatedMinutes": 30
+          },
+          {
+            "draftId": "t3",
+            "title": "Confirm with the people who need to align",
+            "description": "",
+            "definitionOfDone": "Each person has replied",
+            "dependsOnDraftIds": [
+              "t2"
+            ],
+            "requirementIds": [
+              "r5"
+            ],
+            "estimatedMinutes": 20
+          }
+        ],
+        "unresolvedItems": []
+      }
+    }
+  },
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "over the line",
+          "kind": "acceptance_criterion",
+          "certainty": "unknown",
+          "importance": "blocking"
+        },
+        {
+          "match": "Polished",
+          "kind": "acceptance_criterion",
+          "certainty": "unknown",
+          "importance": "blocking"
+        },
+        {
+          "match": "everyone",
+          "kind": "instruction",
+          "certainty": "unknown",
+          "importance": "blocking"
+        }
+      ],
+      "absent": [
+        {
+          "match": "frustrated"
+        }
+      ]
+    },
+    "clarification": {
+      "blocking": true,
+      "topics": [
+        "over the line",
+        "polished",
+        "aligned"
+      ]
+    }
+  },
+  "steps": [
+    {
+      "do": "answer",
+      "answer": "Done means reviewed by my lead; polished means consistent layout; align the three team leads"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "needs_input"
+    },
+    {
+      "check": "question",
+      "snap": "initial",
+      "count": {
+        "min": 3
+      },
+      "blocking": true,
+      "id": "three-blocking-questions"
+    },
+    {
+      "check": "requirement",
+      "snap": "initial",
+      "count": {
+        "eq": 0
+      },
+      "fakeOnly": true,
+      "match": "frustrated",
+      "id": "emotion-stated-as-fact-removed"
+    },
+    {
+      "check": "requirement",
+      "snap": "initial",
+      "count": {
+        "min": 3
+      },
+      "certainty": "unknown",
+      "importance": "blocking",
+      "id": "undefined-terms-kept-as-unknown"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "ready_for_approval",
+      "id": "plan-once-answered"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "latestPlan.plan.tasks",
+      "op": "len_min",
+      "value": 3
+    }
+  ]
+}

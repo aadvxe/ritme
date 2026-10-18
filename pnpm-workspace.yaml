@@ -1,0 +1,10 @@
+packages:
+  - apps/frontend
+  - apps/extension
+  - packages/api-client
+  - packages/design
+
+allowBuilds:
+  '@firebase/util': true
+  esbuild: true
+  protobufjs: true

@@ -1,0 +1,278 @@
+{
+  "id": "s04_multi_deliverables_dependencies",
+  "specNumber": 4,
+  "title": "Multiple deliverables with dependencies",
+  "description": "Three deliverables and an approval dependency; the model's first plan contains a cycle and is rejected; stored tasks keep the exact dependency graph.",
+  "synthetic": true,
+  "capture": {
+    "contentText": "For the partner launch we need three things: the pricing one-pager, the FAQ page and the launch email. The email can only go out after the pricing one-pager and the FAQ page are approved. Please have everything ready by 2026-12-04."
+  },
+  "llm": {
+    "extract": {
+      "then": {
+        "suggestedTitle": "Partner launch materials",
+        "objective": "Prepare the three partner launch materials.",
+        "requirements": [
+          {
+            "id": "r1",
+            "kind": "objective",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "Prepare the partner launch materials.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "For the partner launch we need three things"
+              }
+            ]
+          },
+          {
+            "id": "r2",
+            "kind": "deliverable",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "Deliverable: the pricing one-pager.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "the pricing one-pager"
+              }
+            ]
+          },
+          {
+            "id": "r3",
+            "kind": "deliverable",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "Deliverable: the FAQ page.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "the FAQ page"
+              }
+            ]
+          },
+          {
+            "id": "r4",
+            "kind": "deliverable",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "Deliverable: the launch email.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "the launch email"
+              }
+            ]
+          },
+          {
+            "id": "r5",
+            "kind": "dependency",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "The launch email can only go out after the pricing one-pager and the FAQ page are approved.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "The email can only go out after the pricing one-pager and the FAQ page are approved"
+              }
+            ]
+          },
+          {
+            "id": "r6",
+            "kind": "deadline",
+            "certainty": "explicit",
+            "importance": "blocking",
+            "text": "Everything is due 2026-12-04.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "ready by 2026-12-04"
+              }
+            ]
+          }
+        ],
+        "questions": [],
+        "summary": "Three launch materials, with the email depending on the other two.",
+        "confidenceNotes": []
+      }
+    },
+    "plan": {
+      "queue": [
+        {
+          "goal": "Prepare the partner launch materials",
+          "tasks": [
+            {
+              "draftId": "t1",
+              "title": "Draft the pricing one-pager",
+              "description": "",
+              "definitionOfDone": "One-pager is drafted",
+              "dependsOnDraftIds": [
+                "t2"
+              ],
+              "requirementIds": [],
+              "estimatedMinutes": 40
+            },
+            {
+              "draftId": "t2",
+              "title": "Draft the FAQ page",
+              "description": "",
+              "definitionOfDone": "FAQ page is drafted",
+              "dependsOnDraftIds": [
+                "t1"
+              ],
+              "requirementIds": [],
+              "estimatedMinutes": 40
+            }
+          ],
+          "unresolvedItems": []
+        }
+      ],
+      "then": {
+        "goal": "Prepare the partner launch materials",
+        "tasks": [
+          {
+            "draftId": "t1",
+            "title": "Draft the pricing one-pager",
+            "description": "",
+            "definitionOfDone": "One-pager is drafted",
+            "dependsOnDraftIds": [],
+            "requirementIds": [
+              "r2"
+            ],
+            "estimatedMinutes": 40
+          },
+          {
+            "draftId": "t2",
+            "title": "Draft the FAQ page",
+            "description": "",
+            "definitionOfDone": "FAQ page is drafted",
+            "dependsOnDraftIds": [],
+            "requirementIds": [
+              "r3"
+            ],
+            "estimatedMinutes": 40
+          },
+          {
+            "draftId": "t3",
+            "title": "Get the pricing one-pager and FAQ page approved",
+            "description": "",
+            "definitionOfDone": "Both are approved",
+            "dependsOnDraftIds": [
+              "t1",
+              "t2"
+            ],
+            "requirementIds": [
+              "r5"
+            ],
+            "estimatedMinutes": 15
+          },
+          {
+            "draftId": "t4",
+            "title": "Draft the launch email",
+            "description": "",
+            "definitionOfDone": "Email is drafted",
+            "dependsOnDraftIds": [],
+            "requirementIds": [
+              "r4"
+            ],
+            "estimatedMinutes": 25
+          },
+          {
+            "draftId": "t5",
+            "title": "Send the launch email",
+            "description": "",
+            "definitionOfDone": "Email is sent",
+            "dependsOnDraftIds": [
+              "t3",
+              "t4"
+            ],
+            "requirementIds": [
+              "r4",
+              "r5"
+            ],
+            "estimatedMinutes": 5
+          }
+        ],
+        "unresolvedItems": []
+      }
+    }
+  },
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "pricing one-pager",
+          "kind": "deliverable",
+          "certainty": "explicit"
+        },
+        {
+          "match": "the FAQ page",
+          "kind": "deliverable",
+          "certainty": "explicit"
+        },
+        {
+          "match": "the launch email",
+          "kind": "deliverable",
+          "certainty": "explicit"
+        },
+        {
+          "match": "can only go out after",
+          "kind": "dependency",
+          "certainty": "explicit"
+        },
+        {
+          "match": "2026-12-04",
+          "kind": "deadline",
+          "certainty": "explicit"
+        }
+      ]
+    },
+    "clarification": {
+      "blocking": false
+    }
+  },
+  "steps": [
+    {
+      "do": "approve_execute"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "llm_calls",
+      "step": "plan",
+      "count": {
+        "eq": 2
+      },
+      "fakeOnly": true,
+      "id": "cyclic-first-plan-rejected-then-repaired"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "latestPlan.plan.tasks.0.dependsOnDraftIds",
+      "op": "len_eq",
+      "value": 0,
+      "id": "first-task-can-start-now"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "tasks",
+      "op": "len_eq",
+      "value": 5
+    },
+    {
+      "check": "task_graph",
+      "minEdges": 4,
+      "id": "stored-graph-acyclic-and-equal-to-approved-plan"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "actions.0.verification",
+      "op": "eq",
+      "value": "verified"
+    }
+  ]
+}

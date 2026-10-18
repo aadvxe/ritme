@@ -1,0 +1,284 @@
+{
+  "id": "s05_conflicting_guideline",
+  "specNumber": 5,
+  "title": "Captured request conflicts with a knowledge guideline",
+  "description": "The capture says skip review; the user's own guideline requires one. The conflict is surfaced with both sources cited, never silently resolved.",
+  "synthetic": true,
+  "knowledge": [
+    {
+      "title": "Client Deliverables Guideline",
+      "content": "# Client deliverables guideline\n\nEvery client-facing proposal needs a 48-hour peer review before it is sent. The reviewer must be a teammate who did not write the proposal.\n\n## Exceptions\n\nOnly the team lead can approve an exception to the review rule, in writing."
+    }
+  ],
+  "capture": {
+    "contentText": "Send the Henderson proposal to the client today. No need for a review, just get it out the door.",
+    "sourcePageTitle": "Henderson proposal"
+  },
+  "llm": {
+    "extract": {
+      "then": {
+        "suggestedTitle": "Send the Henderson proposal",
+        "objective": "Send the Henderson proposal to the client.",
+        "requirements": [
+          {
+            "id": "r1",
+            "kind": "objective",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "Send the Henderson proposal to the client today.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "Send the Henderson proposal to the client today"
+              }
+            ]
+          },
+          {
+            "id": "r2",
+            "kind": "instruction",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "Skip the review and send it immediately.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "No need for a review, just get it out the door"
+              }
+            ]
+          },
+          {
+            "id": "r3",
+            "kind": "instruction",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "Guideline: client-facing proposals need a 48-hour peer review before they are sent.",
+            "evidence": [
+              {
+                "sourceId": "$knowledge",
+                "excerpt": "Every client-facing proposal needs a 48-hour peer review before it is sent."
+              }
+            ]
+          },
+          {
+            "id": "r4",
+            "kind": "contradiction",
+            "certainty": "conflicting",
+            "importance": "blocking",
+            "text": "The request says to skip review, but the guideline requires a 48-hour peer review.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "No need for a review"
+              },
+              {
+                "sourceId": "$knowledge",
+                "excerpt": "needs a 48-hour peer review"
+              }
+            ]
+          },
+          {
+            "id": "r5",
+            "kind": "deadline",
+            "certainty": "explicit",
+            "importance": "blocking",
+            "text": "It has to go to the client today.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "to the client today"
+              }
+            ]
+          }
+        ],
+        "questions": [
+          {
+            "id": "q1",
+            "question": "Should the proposal skip the 48-hour peer review, or follow the guideline?",
+            "whyItMatters": "The request and your guideline disagree.",
+            "blocking": true,
+            "relatedRequirementIds": [
+              "r2",
+              "r3",
+              "r4"
+            ]
+          }
+        ],
+        "summary": "The request asks to skip a review that your guideline requires.",
+        "confidenceNotes": []
+      }
+    },
+    "plan": {
+      "then": {
+        "goal": "Send the Henderson proposal after the required review",
+        "tasks": [
+          {
+            "draftId": "t1",
+            "title": "Finalise the Henderson proposal",
+            "description": "",
+            "definitionOfDone": "The proposal is complete",
+            "dependsOnDraftIds": [],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 45
+          },
+          {
+            "draftId": "t2",
+            "title": "Ask a teammate who did not write it to peer-review the proposal",
+            "description": "",
+            "definitionOfDone": "Review comments are in the shared folder",
+            "dependsOnDraftIds": [
+              "t1"
+            ],
+            "requirementIds": [
+              "r3"
+            ],
+            "estimatedMinutes": 30
+          },
+          {
+            "draftId": "t3",
+            "title": "Send the proposal once the review window has passed",
+            "description": "",
+            "definitionOfDone": "The proposal is sent",
+            "dependsOnDraftIds": [
+              "t2"
+            ],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 5
+          }
+        ],
+        "unresolvedItems": []
+      }
+    }
+  },
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "Send the Henderson proposal",
+          "kind": "objective",
+          "certainty": "explicit"
+        },
+        {
+          "match": "Every client-facing proposal",
+          "kind": "instruction",
+          "certainty": "explicit"
+        },
+        {
+          "match": "skip review, but the guideline",
+          "kind": "contradiction",
+          "certainty": "conflicting",
+          "importance": "blocking"
+        },
+        {
+          "match": "to the client today",
+          "kind": "deadline",
+          "certainty": "unknown",
+          "importance": "blocking"
+        }
+      ]
+    },
+    "clarification": {
+      "blocking": true,
+      "topics": [
+        "review",
+        "today|exact date"
+      ]
+    }
+  },
+  "steps": [
+    {
+      "do": "plan",
+      "expect": 422
+    },
+    {
+      "do": "answer",
+      "answer": "Follow the guideline; the team lead has not approved an exception.",
+      "due": "+3d"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "requirement",
+      "snap": "initial",
+      "count": {
+        "min": 1
+      },
+      "kind": "contradiction",
+      "certainty": "conflicting",
+      "importance": "blocking",
+      "evidenceSource": "knowledge",
+      "id": "conflict-surfaced-citing-the-guideline"
+    },
+    {
+      "check": "requirement",
+      "snap": "initial",
+      "count": {
+        "min": 1
+      },
+      "match": "48-hour",
+      "certainty": "explicit",
+      "evidenceSource": "knowledge",
+      "id": "guideline-requirement-grounded-in-knowledge"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "sources.*.sourceKind",
+      "op": "contains",
+      "value": "knowledge",
+      "id": "knowledge-citation-in-sources"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "sources.*.sourceKind",
+      "op": "contains",
+      "value": "capture"
+    },
+    {
+      "check": "question",
+      "snap": "initial",
+      "count": {
+        "min": 2
+      },
+      "blocking": true,
+      "id": "conflict-and-vague-today-both-block"
+    },
+    {
+      "check": "requirement",
+      "snap": "initial",
+      "count": {
+        "eq": 0
+      },
+      "fakeOnly": true,
+      "kind": "deadline",
+      "certainty": "explicit",
+      "id": "today-not-treated-as-exact-deadline"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "latestPlan",
+      "op": "is_null",
+      "id": "no-plan-while-conflict-open"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "latestPlan.plan.tasks.*.title",
+      "op": "regex",
+      "value": "peer.review",
+      "id": "plan-keeps-the-guideline-step"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "ready_for_approval"
+    }
+  ]
+}

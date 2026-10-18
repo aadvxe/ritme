@@ -1,0 +1,247 @@
+{
+  "id": "s09_task_already_exists",
+  "specNumber": 9,
+  "title": "Task already exists: no duplicate",
+  "description": "Re-submitting a capture, double approve, triple execute, and a model proposing a task whose title already exists never create a second row.",
+  "synthetic": true,
+  "capture": {
+    "contentText": "Please update the onboarding checklist for new hires. It must list laptop setup, account access and badge pickup. Needed by 2026-11-12."
+  },
+  "llm": {
+    "plan": {
+      "then": {
+        "goal": "Update the onboarding checklist",
+        "tasks": [
+          {
+            "draftId": "t1",
+            "title": "Update the onboarding checklist",
+            "description": "",
+            "definitionOfDone": "The checklist is updated",
+            "dependsOnDraftIds": [],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 30
+          },
+          {
+            "draftId": "t2",
+            "title": "Add laptop setup, account access and badge pickup",
+            "description": "",
+            "definitionOfDone": "All three items are listed",
+            "dependsOnDraftIds": [
+              "t1"
+            ],
+            "requirementIds": [
+              "r2"
+            ],
+            "estimatedMinutes": 20
+          },
+          {
+            "draftId": "t3",
+            "title": "Share the checklist with HR",
+            "description": "",
+            "definitionOfDone": "HR has the checklist",
+            "dependsOnDraftIds": [
+              "t2"
+            ],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 5
+          }
+        ],
+        "unresolvedItems": []
+      }
+    },
+    "replan": {
+      "then": {
+        "goal": "Update the onboarding checklist",
+        "tasks": [
+          {
+            "draftId": "t1",
+            "title": "Update the onboarding checklist",
+            "description": "",
+            "definitionOfDone": "The checklist is updated",
+            "dependsOnDraftIds": [],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 30
+          },
+          {
+            "draftId": "t2",
+            "title": "Add laptop setup, account access and badge pickup",
+            "description": "",
+            "definitionOfDone": "All three items are listed",
+            "dependsOnDraftIds": [
+              "t1"
+            ],
+            "requirementIds": [
+              "r2"
+            ],
+            "estimatedMinutes": 20
+          },
+          {
+            "draftId": "t3",
+            "title": "Share the checklist with HR",
+            "description": "",
+            "definitionOfDone": "HR has the checklist",
+            "dependsOnDraftIds": [
+              "t2"
+            ],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 5,
+            "dueAt": "$due:+3d"
+          },
+          {
+            "draftId": "t4",
+            "title": "Update the onboarding checklist",
+            "description": "",
+            "definitionOfDone": "The checklist is updated again",
+            "dependsOnDraftIds": [],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 30
+          }
+        ],
+        "unresolvedItems": [],
+        "changes": []
+      }
+    }
+  },
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "onboarding checklist for new hires",
+          "kind": "objective",
+          "certainty": "explicit"
+        },
+        {
+          "match": "2026-11-12",
+          "kind": "deadline",
+          "certainty": "explicit"
+        }
+      ]
+    },
+    "clarification": {
+      "blocking": false
+    }
+  },
+  "steps": [
+    {
+      "do": "resubmit_capture",
+      "save": "resubmit"
+    },
+    {
+      "do": "approve",
+      "times": 2
+    },
+    {
+      "do": "execute",
+      "times": 3,
+      "action": "approved"
+    },
+    {
+      "do": "snapshot",
+      "name": "after_create"
+    },
+    {
+      "do": "replan",
+      "due": "+3d",
+      "save": "replan"
+    },
+    {
+      "do": "approve_execute"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "value",
+      "snap": "saved:resubmit",
+      "path": "status",
+      "op": "eq",
+      "value": 200,
+      "id": "resubmitted-capture-returns-existing"
+    },
+    {
+      "check": "value",
+      "snap": "saved:resubmit",
+      "path": "body.created",
+      "op": "eq",
+      "value": false
+    },
+    {
+      "check": "count",
+      "what": "captures",
+      "count": {
+        "eq": 1
+      }
+    },
+    {
+      "check": "count",
+      "what": "workflows",
+      "count": {
+        "eq": 1
+      }
+    },
+    {
+      "check": "count",
+      "what": "agent_runs",
+      "where": {
+        "trigger": "capture"
+      },
+      "count": {
+        "eq": 1
+      },
+      "id": "no-second-analysis-run"
+    },
+    {
+      "check": "value",
+      "snap": "after_create",
+      "path": "tasks",
+      "op": "len_eq",
+      "value": 3,
+      "id": "triple-execute-writes-once"
+    },
+    {
+      "check": "count",
+      "what": "tasks",
+      "count": {
+        "eq": 3
+      },
+      "id": "duplicate-titled-proposal-did-not-create-a-fourth-task"
+    },
+    {
+      "check": "value",
+      "snap": "saved:replan",
+      "path": "body.plan.plan.tasks",
+      "op": "len_eq",
+      "value": 3,
+      "fakeOnly": true,
+      "id": "duplicate-title-dropped-from-replan"
+    },
+    {
+      "check": "value",
+      "snap": "saved:replan",
+      "path": "body.plan.plan.unresolvedItems",
+      "op": "regex",
+      "value": "already exists",
+      "fakeOnly": true,
+      "id": "user-told-the-duplicate-was-left-out"
+    },
+    {
+      "check": "count",
+      "what": "proposed_actions",
+      "count": {
+        "eq": 2
+      },
+      "where": {
+        "status": "succeeded"
+      }
+    }
+  ]
+}

@@ -1,0 +1,208 @@
+{
+  "id": "s07_concise_small_steps",
+  "specNumber": 7,
+  "title": "Concise text and small steps (Micro-Step preferences)",
+  "description": "Explicit preferences (small steps, concise, one step at a time, hide estimates) shape the plan; the model's long, estimate-laden output is trimmed by code. Nothing is inferred about the person.",
+  "synthetic": true,
+  "preferences": {
+    "taskGranularity": "small_steps",
+    "informationDensity": "concise",
+    "planLayout": "one_step",
+    "timeEstimates": "hide"
+  },
+  "capture": {
+    "contentText": "Please put together the Q4 partner update. Include the revenue summary and the roadmap highlights. It should go out on 2026-11-30."
+  },
+  "llm": {
+    "plan": {
+      "then": {
+        "goal": "Send the Q4 partner update",
+        "tasks": [
+          {
+            "draftId": "t1",
+            "title": "Step 1: part 1 of the partner update (about 21 minutes)",
+            "description": "First open the previous partner update and the latest revenue export, then compare the figures line by line, note every difference in a scratch list, ask the finance contact about anything that does not reconcile, and only then write the paragraph for this section in plain language that a partner can read without any internal context. ",
+            "definitionOfDone": "Part 1 (about 20 minutes) is done",
+            "dependsOnDraftIds": [],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 21
+          },
+          {
+            "draftId": "t2",
+            "title": "Step 2: part 2 of the partner update (about 22 minutes)",
+            "description": "First open the previous partner update and the latest revenue export, then compare the figures line by line, note every difference in a scratch list, ask the finance contact about anything that does not reconcile, and only then write the paragraph for this section in plain language that a partner can read without any internal context. ",
+            "definitionOfDone": "Part 2 (about 20 minutes) is done",
+            "dependsOnDraftIds": [
+              "t1"
+            ],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 22
+          },
+          {
+            "draftId": "t3",
+            "title": "Step 3: part 3 of the partner update (about 23 minutes)",
+            "description": "First open the previous partner update and the latest revenue export, then compare the figures line by line, note every difference in a scratch list, ask the finance contact about anything that does not reconcile, and only then write the paragraph for this section in plain language that a partner can read without any internal context. ",
+            "definitionOfDone": "Part 3 (about 20 minutes) is done",
+            "dependsOnDraftIds": [
+              "t2"
+            ],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 23
+          },
+          {
+            "draftId": "t4",
+            "title": "Step 4: part 4 of the partner update (about 24 minutes)",
+            "description": "First open the previous partner update and the latest revenue export, then compare the figures line by line, note every difference in a scratch list, ask the finance contact about anything that does not reconcile, and only then write the paragraph for this section in plain language that a partner can read without any internal context. ",
+            "definitionOfDone": "Part 4 (about 20 minutes) is done",
+            "dependsOnDraftIds": [
+              "t3"
+            ],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 24
+          },
+          {
+            "draftId": "t5",
+            "title": "Step 5: part 5 of the partner update (about 25 minutes)",
+            "description": "First open the previous partner update and the latest revenue export, then compare the figures line by line, note every difference in a scratch list, ask the finance contact about anything that does not reconcile, and only then write the paragraph for this section in plain language that a partner can read without any internal context. ",
+            "definitionOfDone": "Part 5 (about 20 minutes) is done",
+            "dependsOnDraftIds": [
+              "t4"
+            ],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 25
+          },
+          {
+            "draftId": "t6",
+            "title": "Step 6: part 6 of the partner update (about 26 minutes)",
+            "description": "First open the previous partner update and the latest revenue export, then compare the figures line by line, note every difference in a scratch list, ask the finance contact about anything that does not reconcile, and only then write the paragraph for this section in plain language that a partner can read without any internal context. ",
+            "definitionOfDone": "Part 6 (about 20 minutes) is done",
+            "dependsOnDraftIds": [
+              "t5"
+            ],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 26
+          }
+        ],
+        "unresolvedItems": []
+      }
+    }
+  },
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "Q4 partner update",
+          "kind": "objective",
+          "certainty": "explicit"
+        },
+        {
+          "match": "2026-11-30",
+          "kind": "deadline",
+          "certainty": "explicit"
+        }
+      ]
+    },
+    "clarification": {
+      "blocking": false
+    }
+  },
+  "steps": [
+    {
+      "do": "http",
+      "path": "/preferences",
+      "save": "prefs"
+    },
+    {
+      "do": "approve_execute"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "in_progress"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "latestPlan.plan.tasks",
+      "op": "len_min",
+      "value": 5,
+      "id": "small-steps-keeps-many-small-tasks"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "latestPlan.plan.tasks",
+      "op": "len_max",
+      "value": 10
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "latestPlan.plan.tasks.*.description",
+      "op": "all_len_max",
+      "value": 160,
+      "fakeOnly": true,
+      "id": "concise-trims-descriptions"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "latestPlan.plan.tasks.*.estimatedMinutes",
+      "op": "all_null",
+      "fakeOnly": true,
+      "id": "hidden-estimates-removed"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "latestPlan.plan.tasks.*.title",
+      "op": "not_regex",
+      "value": "minutes?\\b",
+      "fakeOnly": true,
+      "id": "estimate-phrases-stripped-from-titles"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "tasks.*.estimatedMinutes",
+      "op": "all_null",
+      "fakeOnly": true,
+      "id": "stored-tasks-have-no-estimates"
+    },
+    {
+      "check": "value",
+      "snap": "saved:prefs",
+      "path": "body.taskGranularity",
+      "op": "eq",
+      "value": "small_steps"
+    },
+    {
+      "check": "value",
+      "snap": "saved:prefs",
+      "path": "body.planLayout",
+      "op": "eq",
+      "value": "one_step"
+    },
+    {
+      "check": "text_absent",
+      "regex": "\\b(adhd|autis|diagnos|disorder|neurodiver)",
+      "id": "no-diagnostic-wording-stored"
+    }
+  ]
+}

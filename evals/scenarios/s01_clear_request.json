@@ -1,0 +1,224 @@
+{
+  "id": "s01_clear_request",
+  "specNumber": 1,
+  "title": "Clear request with explicit deliverable and deadline",
+  "description": "A fully specified request: no blocking question is warranted; the stated date is explicit but is never placed on a task until the user confirms it.",
+  "synthetic": true,
+  "capture": {
+    "contentText": "Please prepare the vendor comparison sheet for the Q3 review. It is due 2026-11-20 17:00 UTC. The sheet must list price, support terms and contract length for each vendor.",
+    "sourceUrl": "https://mail.example.com/thread/vendor-review",
+    "sourcePageTitle": "Q3 vendor review"
+  },
+  "llm": {
+    "plan": {
+      "then": {
+        "goal": "Deliver the vendor comparison sheet for the Q3 review",
+        "tasks": [
+          {
+            "draftId": "t1",
+            "title": "Collect price, support terms and contract length per vendor",
+            "description": "",
+            "definitionOfDone": "A table has one row per vendor",
+            "dependsOnDraftIds": [],
+            "requirementIds": [
+              "r3"
+            ],
+            "estimatedMinutes": 30
+          },
+          {
+            "draftId": "t2",
+            "title": "Build the comparison sheet",
+            "description": "",
+            "definitionOfDone": "The sheet lists price, support terms and contract length for every vendor",
+            "dependsOnDraftIds": [
+              "t1"
+            ],
+            "requirementIds": [
+              "r1",
+              "r3"
+            ],
+            "estimatedMinutes": 45
+          },
+          {
+            "draftId": "t3",
+            "title": "Send the sheet for the Q3 review",
+            "description": "",
+            "definitionOfDone": "The sheet is sent to the reviewers",
+            "dependsOnDraftIds": [
+              "t2"
+            ],
+            "requirementIds": [
+              "r2"
+            ],
+            "estimatedMinutes": 10,
+            "dueAt": "2026-11-20T17:00:00+00:00"
+          }
+        ],
+        "unresolvedItems": []
+      }
+    }
+  },
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "vendor comparison sheet",
+          "kind": "objective",
+          "certainty": "explicit"
+        },
+        {
+          "match": "2026-11-20",
+          "kind": "deadline",
+          "certainty": "explicit",
+          "importance": "blocking"
+        },
+        {
+          "match": "price, support terms and contract length",
+          "kind": "instruction",
+          "certainty": "explicit"
+        }
+      ]
+    },
+    "clarification": {
+      "blocking": false
+    }
+  },
+  "steps": [
+    {
+      "do": "confirm_requirement",
+      "requirement": "r2"
+    },
+    {
+      "do": "plan"
+    },
+    {
+      "do": "snapshot",
+      "name": "replanned"
+    },
+    {
+      "do": "execute",
+      "action": "pending",
+      "expect": 422,
+      "save": "early_exec"
+    },
+    {
+      "do": "snapshot",
+      "name": "before_approval"
+    },
+    {
+      "do": "approve_execute"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "ready_for_approval",
+      "id": "no-blocker-goes-straight-to-plan"
+    },
+    {
+      "check": "question",
+      "snap": "initial",
+      "count": {
+        "eq": 0
+      },
+      "blocking": true,
+      "id": "no-unnecessary-blocking-question"
+    },
+    {
+      "check": "requirement",
+      "snap": "initial",
+      "count": {
+        "min": 1
+      },
+      "kind": "deadline",
+      "certainty": "explicit",
+      "match": "2026-11-20",
+      "id": "explicit-deadline-kept-with-evidence"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "latestPlan.plan.tasks.*.dueAt",
+      "op": "all_null",
+      "fakeOnly": true,
+      "id": "unconfirmed-date-not-placed-on-task"
+    },
+    {
+      "check": "value",
+      "snap": "replanned",
+      "path": "latestPlan.plan.tasks.2.dueAt",
+      "op": "regex",
+      "value": "2026-11-20T17:00:00",
+      "fakeOnly": true,
+      "id": "confirmed-date-allowed-on-task"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "tasks",
+      "op": "len_eq",
+      "value": 3,
+      "id": "three-tasks-written-after-approval"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "tasks.*.dueAt",
+      "op": "regex",
+      "value": "2026-11-20T17:00:00",
+      "fakeOnly": true,
+      "id": "stored-task-carries-confirmed-date"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "actions.0.verification",
+      "op": "eq",
+      "value": "verified",
+      "id": "write-verified-by-readback"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "in_progress"
+    },
+    {
+      "check": "llm_calls",
+      "step": "extract",
+      "count": {
+        "eq": 1
+      },
+      "fakeOnly": true
+    },
+    {
+      "check": "llm_calls",
+      "step": "plan",
+      "count": {
+        "eq": 2
+      },
+      "fakeOnly": true
+    },
+    {
+      "check": "value",
+      "snap": "saved:early_exec",
+      "path": "body.error.code",
+      "op": "eq",
+      "value": "invalid_action",
+      "id": "execute-before-approval-refused"
+    },
+    {
+      "check": "value",
+      "snap": "before_approval",
+      "path": "tasks",
+      "op": "len_eq",
+      "value": 0,
+      "id": "nothing-written-before-approval"
+    }
+  ],
+  "liveSkip": "steps reference scripted requirement ids (confirm r2); a real model numbers requirements differently"
+}

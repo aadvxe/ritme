@@ -1,0 +1,209 @@
+{
+  "id": "s15_retrieval_no_relevant_source",
+  "specNumber": 15,
+  "title": "Retrieval finds no relevant source",
+  "description": "With only unrelated documents, nothing is cited; a model that invents a company rule with a fake excerpt has the excerpt removed and the claim demoted to inferred.",
+  "synthetic": true,
+  "knowledge": [
+    {
+      "title": "Cafeteria opening hours",
+      "content": "# Cafeteria\n\nThe cafeteria is open from 08:00 to 15:00 on weekdays. Lunch specials are announced on the intranet every Monday."
+    },
+    {
+      "title": "Parking permits",
+      "content": "# Parking\n\nParking permits are renewed each January at the front desk. Visitors register at reception."
+    }
+  ],
+  "capture": {
+    "contentText": "Please write the release notes for version 4.2. List the new features and the known issues. They are due 2026-11-25."
+  },
+  "llm": {
+    "extract": {
+      "then": {
+        "suggestedTitle": "Release notes for 4.2",
+        "objective": "Write the release notes for version 4.2.",
+        "requirements": [
+          {
+            "id": "r1",
+            "kind": "objective",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "Write the release notes for version 4.2.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "write the release notes for version 4.2"
+              }
+            ]
+          },
+          {
+            "id": "r2",
+            "kind": "deadline",
+            "certainty": "explicit",
+            "importance": "blocking",
+            "text": "Due 2026-11-25.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "due 2026-11-25"
+              }
+            ]
+          },
+          {
+            "id": "r3",
+            "kind": "instruction",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "Company guideline: all release notes need legal review.",
+            "evidence": [
+              {
+                "sourceId": "$knowledge",
+                "excerpt": "All release notes require legal review before publication."
+              }
+            ]
+          }
+        ],
+        "questions": [],
+        "summary": "Write release notes by 2026-11-25.",
+        "confidenceNotes": []
+      }
+    },
+    "plan": {
+      "then": {
+        "goal": "Write the release notes for version 4.2",
+        "tasks": [
+          {
+            "draftId": "t1",
+            "title": "List the new features and known issues",
+            "description": "",
+            "definitionOfDone": "Both lists exist",
+            "dependsOnDraftIds": [],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 30
+          },
+          {
+            "draftId": "t2",
+            "title": "Write and publish the release notes",
+            "description": "",
+            "definitionOfDone": "Notes are published",
+            "dependsOnDraftIds": [
+              "t1"
+            ],
+            "requirementIds": [
+              "r1",
+              "r2"
+            ],
+            "estimatedMinutes": 45
+          }
+        ],
+        "unresolvedItems": []
+      }
+    }
+  },
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "release notes for version 4.2",
+          "kind": "objective",
+          "certainty": "explicit"
+        },
+        {
+          "match": "2026-11-25",
+          "kind": "deadline",
+          "certainty": "explicit"
+        },
+        {
+          "match": "legal review",
+          "kind": "instruction",
+          "certainty": "inferred"
+        }
+      ]
+    },
+    "clarification": {
+      "blocking": false
+    }
+  },
+  "steps": [
+    {
+      "do": "http",
+      "method": "POST",
+      "path": "/knowledge/search",
+      "body": {
+        "query": "release notes legal review version"
+      },
+      "save": "irrelevant"
+    },
+    {
+      "do": "http",
+      "method": "POST",
+      "path": "/knowledge/search",
+      "body": {
+        "query": "cafeteria lunch weekdays"
+      },
+      "save": "relevant"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "sources.*.sourceKind",
+      "op": "not_contains",
+      "value": "knowledge",
+      "id": "no-knowledge-citation-when-nothing-relevant"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "sources",
+      "op": "len_eq",
+      "value": 1,
+      "id": "only-the-capture-is-a-source"
+    },
+    {
+      "check": "requirement",
+      "snap": "initial",
+      "count": {
+        "eq": 1
+      },
+      "fakeOnly": true,
+      "match": "legal review",
+      "certainty": "inferred",
+      "id": "invented-guideline-demoted-to-inferred"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "requirements.2.evidence",
+      "op": "len_eq",
+      "value": 0,
+      "fakeOnly": true,
+      "id": "fabricated-excerpt-removed"
+    },
+    {
+      "check": "value",
+      "snap": "saved:irrelevant",
+      "path": "body.results",
+      "op": "len_eq",
+      "value": 0,
+      "id": "search-returns-nothing-for-unrelated-query"
+    },
+    {
+      "check": "value",
+      "snap": "saved:relevant",
+      "path": "body.results",
+      "op": "len_min",
+      "value": 1,
+      "id": "search-still-finds-relevant-chunks"
+    },
+    {
+      "check": "value",
+      "snap": "saved:relevant",
+      "path": "body.results.0.chunkId",
+      "op": "not_null"
+    }
+  ]
+}

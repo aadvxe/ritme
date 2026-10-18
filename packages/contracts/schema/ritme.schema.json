@@ -1,0 +1,3881 @@
+{
+  "$defs": {
+    "ActionStatus": {
+      "enum": [
+        "pending_approval",
+        "approved",
+        "executing",
+        "succeeded",
+        "failed",
+        "rejected",
+        "cancelled"
+      ],
+      "title": "ActionStatus",
+      "type": "string"
+    },
+    "ActionType": {
+      "enum": [
+        "create_tasks",
+        "update_tasks"
+      ],
+      "title": "ActionType",
+      "type": "string"
+    },
+    "ActivityEventOut": {
+      "properties": {
+        "createdAt": {
+          "format": "date-time",
+          "title": "Createdat",
+          "type": "string"
+        },
+        "details": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Details"
+        },
+        "eventType": {
+          "title": "Eventtype",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "summary": {
+          "title": "Summary",
+          "type": "string"
+        },
+        "workflowId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workflowid"
+        }
+      },
+      "required": [
+        "id",
+        "workflowId",
+        "eventType",
+        "summary",
+        "details",
+        "createdAt"
+      ],
+      "title": "ActivityEventOut",
+      "type": "object"
+    },
+    "ActivityPage": {
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/ActivityEventOut"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "nextCursor": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nextcursor"
+        }
+      },
+      "required": [
+        "items",
+        "nextCursor"
+      ],
+      "title": "ActivityPage",
+      "type": "object"
+    },
+    "AgentRunStatus": {
+      "enum": [
+        "running",
+        "waiting",
+        "succeeded",
+        "failed",
+        "cancelled"
+      ],
+      "title": "AgentRunStatus",
+      "type": "string"
+    },
+    "AgentRunTrigger": {
+      "enum": [
+        "capture",
+        "answer",
+        "plan",
+        "replan",
+        "resume"
+      ],
+      "title": "AgentRunTrigger",
+      "type": "string"
+    },
+    "AnswerDisposition": {
+      "enum": [
+        "answer",
+        "defer_nonblocking"
+      ],
+      "title": "AnswerDisposition",
+      "type": "string"
+    },
+    "AnswerRequest": {
+      "properties": {
+        "answer": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Answer"
+        },
+        "assumptionLabel": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Assumptionlabel"
+        },
+        "confirmedDueAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmeddueat"
+        },
+        "disposition": {
+          "$ref": "#/$defs/AnswerDisposition",
+          "default": "answer"
+        }
+      },
+      "title": "AnswerRequest",
+      "type": "object"
+    },
+    "CalendarItem": {
+      "properties": {
+        "dependsOn": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "title": "Dependson",
+          "type": "array"
+        },
+        "dueAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dueat"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "status": {
+          "title": "Status",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "task",
+            "workflow_deadline"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "workflowId": {
+          "format": "uuid",
+          "title": "Workflowid",
+          "type": "string"
+        },
+        "workflowTitle": {
+          "title": "Workflowtitle",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "id",
+        "workflowId",
+        "workflowTitle",
+        "title",
+        "dueAt",
+        "status",
+        "dependsOn"
+      ],
+      "title": "CalendarItem",
+      "type": "object"
+    },
+    "CalendarOverview": {
+      "properties": {
+        "items": {
+          "items": {
+            "$ref": "#/$defs/CalendarItem"
+          },
+          "title": "Items",
+          "type": "array"
+        },
+        "undated": {
+          "items": {
+            "$ref": "#/$defs/CalendarItem"
+          },
+          "title": "Undated",
+          "type": "array"
+        }
+      },
+      "required": [
+        "items",
+        "undated"
+      ],
+      "title": "CalendarOverview",
+      "type": "object"
+    },
+    "CaptureCreate": {
+      "properties": {
+        "contentText": {
+          "maxLength": 20000,
+          "minLength": 1,
+          "title": "Contenttext",
+          "type": "string"
+        },
+        "idempotencyKey": {
+          "maxLength": 128,
+          "minLength": 8,
+          "title": "Idempotencykey",
+          "type": "string"
+        },
+        "sourceDomain": {
+          "anyOf": [
+            {
+              "maxLength": 255,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourcedomain"
+        },
+        "sourcePageTitle": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourcepagetitle"
+        },
+        "sourceType": {
+          "$ref": "#/$defs/CaptureSourceType"
+        },
+        "sourceUrl": {
+          "anyOf": [
+            {
+              "maxLength": 2048,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourceurl"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "maxLength": 300,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "userNote": {
+          "anyOf": [
+            {
+              "maxLength": 2000,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Usernote"
+        }
+      },
+      "required": [
+        "contentText",
+        "sourceType",
+        "idempotencyKey"
+      ],
+      "title": "CaptureCreate",
+      "type": "object"
+    },
+    "CaptureCreateResponse": {
+      "properties": {
+        "capture": {
+          "$ref": "#/$defs/CaptureOut"
+        },
+        "created": {
+          "default": true,
+          "title": "Created",
+          "type": "boolean"
+        },
+        "nextUrl": {
+          "title": "Nexturl",
+          "type": "string"
+        },
+        "workflow": {
+          "$ref": "#/$defs/WorkflowSummary"
+        }
+      },
+      "required": [
+        "capture",
+        "workflow",
+        "nextUrl",
+        "created"
+      ],
+      "title": "CaptureCreateResponse",
+      "type": "object"
+    },
+    "CaptureOut": {
+      "properties": {
+        "contentText": {
+          "title": "Contenttext",
+          "type": "string"
+        },
+        "createdAt": {
+          "format": "date-time",
+          "title": "Createdat",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "sourceDomain": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourcedomain"
+        },
+        "sourcePageTitle": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourcepagetitle"
+        },
+        "sourceType": {
+          "$ref": "#/$defs/CaptureSourceType"
+        },
+        "sourceUrl": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourceurl"
+        },
+        "status": {
+          "$ref": "#/$defs/CaptureStatus"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "updatedAt": {
+          "format": "date-time",
+          "title": "Updatedat",
+          "type": "string"
+        },
+        "userNote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Usernote"
+        },
+        "workflowId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Workflowid"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "contentText",
+        "userNote",
+        "sourcePageTitle",
+        "sourceUrl",
+        "sourceDomain",
+        "sourceType",
+        "status",
+        "workflowId",
+        "createdAt",
+        "updatedAt"
+      ],
+      "title": "CaptureOut",
+      "type": "object"
+    },
+    "CaptureSourceType": {
+      "enum": [
+        "browser_selection",
+        "manual_text",
+        "upload",
+        "seed_demo"
+      ],
+      "title": "CaptureSourceType",
+      "type": "string"
+    },
+    "CaptureStatus": {
+      "enum": [
+        "draft",
+        "submitted",
+        "analyzed",
+        "failed",
+        "deleted"
+      ],
+      "title": "CaptureStatus",
+      "type": "string"
+    },
+    "Certainty": {
+      "enum": [
+        "explicit",
+        "inferred",
+        "unknown",
+        "conflicting"
+      ],
+      "title": "Certainty",
+      "type": "string"
+    },
+    "ChangeType": {
+      "enum": [
+        "create",
+        "update",
+        "keep",
+        "mark_blocked"
+      ],
+      "title": "ChangeType",
+      "type": "string"
+    },
+    "Citation": {
+      "description": "A source excerpt that resolves to a stored chunk (or to the capture itself).",
+      "properties": {
+        "chunkId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Chunkid"
+        },
+        "excerpt": {
+          "title": "Excerpt",
+          "type": "string"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location"
+        },
+        "sourceDate": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourcedate"
+        },
+        "sourceId": {
+          "title": "Sourceid",
+          "type": "string"
+        },
+        "sourceKind": {
+          "enum": [
+            "capture",
+            "knowledge"
+          ],
+          "title": "Sourcekind",
+          "type": "string"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "sourceId",
+        "sourceKind",
+        "title",
+        "chunkId",
+        "excerpt",
+        "location",
+        "sourceDate"
+      ],
+      "title": "Citation",
+      "type": "object"
+    },
+    "ClarificationHelp": {
+      "enum": [
+        "show_questions",
+        "draft_message",
+        "independent"
+      ],
+      "title": "ClarificationHelp",
+      "type": "string"
+    },
+    "ClarificationQuestion": {
+      "properties": {
+        "answer": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Answer"
+        },
+        "blocking": {
+          "title": "Blocking",
+          "type": "boolean"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "question": {
+          "minLength": 1,
+          "title": "Question",
+          "type": "string"
+        },
+        "relatedRequirementIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Relatedrequirementids",
+          "type": "array"
+        },
+        "status": {
+          "$ref": "#/$defs/QuestionStatus",
+          "default": "open"
+        },
+        "suggestedAnswers": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Suggestedanswers"
+        },
+        "whyItMatters": {
+          "minLength": 1,
+          "title": "Whyitmatters",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "question",
+        "whyItMatters",
+        "blocking",
+        "relatedRequirementIds",
+        "suggestedAnswers",
+        "answer",
+        "status"
+      ],
+      "title": "ClarificationQuestion",
+      "type": "object"
+    },
+    "CollabGuideInput": {
+      "properties": {
+        "context": {
+          "$ref": "#/$defs/StepContext"
+        },
+        "preferences": {
+          "$ref": "#/$defs/Preferences"
+        }
+      },
+      "required": [
+        "preferences",
+        "context"
+      ],
+      "title": "CollabGuideInput",
+      "type": "object"
+    },
+    "CollabGuideOutput": {
+      "properties": {
+        "text": {
+          "title": "Text",
+          "type": "string"
+        }
+      },
+      "required": [
+        "text"
+      ],
+      "title": "CollabGuideOutput",
+      "type": "object"
+    },
+    "CommunicationStyle": {
+      "enum": [
+        "preserve_my_voice",
+        "make_expectations_explicit",
+        "offer_tone_options"
+      ],
+      "title": "CommunicationStyle",
+      "type": "string"
+    },
+    "ConnectedDevice": {
+      "properties": {
+        "createdAt": {
+          "format": "date-time",
+          "title": "Createdat",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        },
+        "lastUsedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lastusedat"
+        },
+        "revokedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Revokedat"
+        }
+      },
+      "required": [
+        "id",
+        "label",
+        "createdAt",
+        "lastUsedAt",
+        "revokedAt"
+      ],
+      "title": "ConnectedDevice",
+      "type": "object"
+    },
+    "DashboardOut": {
+      "properties": {
+        "activeWorkflows": {
+          "items": {
+            "$ref": "#/$defs/WorkflowSummary"
+          },
+          "title": "Activeworkflows",
+          "type": "array"
+        },
+        "needsApproval": {
+          "items": {
+            "$ref": "#/$defs/NeedsApprovalItem"
+          },
+          "title": "Needsapproval",
+          "type": "array"
+        },
+        "needsInput": {
+          "items": {
+            "$ref": "#/$defs/NeedsInputItem"
+          },
+          "title": "Needsinput",
+          "type": "array"
+        },
+        "nextBestStep": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/NextBestStep"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "recentActivity": {
+          "items": {
+            "$ref": "#/$defs/ActivityEventOut"
+          },
+          "title": "Recentactivity",
+          "type": "array"
+        },
+        "recentCaptures": {
+          "items": {
+            "$ref": "#/$defs/CaptureOut"
+          },
+          "title": "Recentcaptures",
+          "type": "array"
+        }
+      },
+      "required": [
+        "nextBestStep",
+        "activeWorkflows",
+        "needsInput",
+        "needsApproval",
+        "recentCaptures",
+        "recentActivity"
+      ],
+      "title": "DashboardOut",
+      "type": "object"
+    },
+    "DeletionResult": {
+      "properties": {
+        "deleted": {
+          "title": "Deleted",
+          "type": "boolean"
+        },
+        "removed": {
+          "additionalProperties": {
+            "type": "integer"
+          },
+          "title": "Removed",
+          "type": "object"
+        }
+      },
+      "required": [
+        "deleted",
+        "removed"
+      ],
+      "title": "DeletionResult",
+      "type": "object"
+    },
+    "DisplaySettings": {
+      "description": "Local presentation settings; not behavioural preferences.",
+      "properties": {
+        "density": {
+          "default": "comfortable",
+          "title": "Density",
+          "type": "string"
+        },
+        "reduceMotion": {
+          "default": "system",
+          "title": "Reducemotion",
+          "type": "string"
+        },
+        "textSize": {
+          "default": "medium",
+          "title": "Textsize",
+          "type": "string"
+        }
+      },
+      "required": [
+        "textSize",
+        "density",
+        "reduceMotion"
+      ],
+      "title": "DisplaySettings",
+      "type": "object"
+    },
+    "DraftClarification": {
+      "description": "A polite, editable message the user may send themselves. Never auto-sent.",
+      "properties": {
+        "message": {
+          "minLength": 1,
+          "title": "Message",
+          "type": "string"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        },
+        "questionId": {
+          "title": "Questionid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "questionId",
+        "message",
+        "notes"
+      ],
+      "title": "DraftClarification",
+      "type": "object"
+    },
+    "DraftClarificationInput": {
+      "properties": {
+        "context": {
+          "$ref": "#/$defs/StepContext"
+        },
+        "objective": {
+          "title": "Objective",
+          "type": "string"
+        },
+        "preferences": {
+          "$ref": "#/$defs/Preferences"
+        },
+        "question": {
+          "$ref": "#/$defs/ClarificationQuestion"
+        },
+        "related": {
+          "items": {
+            "$ref": "#/$defs/RequirementItem"
+          },
+          "title": "Related",
+          "type": "array"
+        },
+        "sourceExcerpt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourceexcerpt"
+        }
+      },
+      "required": [
+        "question",
+        "objective",
+        "related",
+        "sourceExcerpt",
+        "preferences",
+        "context"
+      ],
+      "title": "DraftClarificationInput",
+      "type": "object"
+    },
+    "DraftClarificationResponse": {
+      "properties": {
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "notes": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Notes"
+        },
+        "questionId": {
+          "title": "Questionid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "questionId",
+        "message",
+        "notes"
+      ],
+      "title": "DraftClarificationResponse",
+      "type": "object"
+    },
+    "EngineStep": {
+      "enum": [
+        "extract",
+        "plan",
+        "replan",
+        "draft_clarification",
+        "collab_guide"
+      ],
+      "title": "EngineStep",
+      "type": "string"
+    },
+    "ErrorBody": {
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "message": {
+          "title": "Message",
+          "type": "string"
+        },
+        "requestId": {
+          "title": "Requestid",
+          "type": "string"
+        },
+        "retryable": {
+          "default": false,
+          "title": "Retryable",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "code",
+        "message",
+        "retryable",
+        "requestId"
+      ],
+      "title": "ErrorBody",
+      "type": "object"
+    },
+    "ErrorCode": {
+      "enum": [
+        "invalid_input",
+        "unauthenticated",
+        "forbidden",
+        "not_found",
+        "conflict",
+        "invalid_action",
+        "rate_limited",
+        "payload_too_large",
+        "provider_error",
+        "internal"
+      ],
+      "title": "ErrorCode",
+      "type": "string"
+    },
+    "ErrorResponse": {
+      "properties": {
+        "error": {
+          "$ref": "#/$defs/ErrorBody"
+        }
+      },
+      "required": [
+        "error"
+      ],
+      "title": "ErrorResponse",
+      "type": "object"
+    },
+    "EvidenceRef": {
+      "properties": {
+        "endOffset": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Endoffset"
+        },
+        "excerpt": {
+          "maxLength": 400,
+          "minLength": 1,
+          "title": "Excerpt",
+          "type": "string"
+        },
+        "sourceId": {
+          "title": "Sourceid",
+          "type": "string"
+        },
+        "startOffset": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Startoffset"
+        }
+      },
+      "required": [
+        "sourceId",
+        "excerpt",
+        "startOffset",
+        "endOffset"
+      ],
+      "title": "EvidenceRef",
+      "type": "object"
+    },
+    "ExistingTask": {
+      "properties": {
+        "dependsOn": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Dependson",
+          "type": "array"
+        },
+        "draftId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Draftid"
+        },
+        "dueAt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dueat"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/TaskStatus"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "draftId",
+        "title",
+        "status",
+        "dueAt",
+        "dependsOn"
+      ],
+      "title": "ExistingTask",
+      "type": "object"
+    },
+    "ExtensionConnectRequest": {
+      "properties": {
+        "extensionId": {
+          "maxLength": 64,
+          "minLength": 10,
+          "title": "Extensionid",
+          "type": "string"
+        },
+        "label": {
+          "anyOf": [
+            {
+              "maxLength": 80,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Label"
+        }
+      },
+      "required": [
+        "extensionId"
+      ],
+      "title": "ExtensionConnectRequest",
+      "type": "object"
+    },
+    "ExtensionRefreshRequest": {
+      "properties": {
+        "refreshToken": {
+          "title": "Refreshtoken",
+          "type": "string"
+        }
+      },
+      "required": [
+        "refreshToken"
+      ],
+      "title": "ExtensionRefreshRequest",
+      "type": "object"
+    },
+    "ExtensionTokenResponse": {
+      "properties": {
+        "accessToken": {
+          "title": "Accesstoken",
+          "type": "string"
+        },
+        "deviceId": {
+          "format": "uuid",
+          "title": "Deviceid",
+          "type": "string"
+        },
+        "expiresAt": {
+          "format": "date-time",
+          "title": "Expiresat",
+          "type": "string"
+        },
+        "refreshToken": {
+          "title": "Refreshtoken",
+          "type": "string"
+        },
+        "scopes": {
+          "items": {
+            "const": "captures:write",
+            "type": "string"
+          },
+          "title": "Scopes",
+          "type": "array"
+        }
+      },
+      "required": [
+        "accessToken",
+        "refreshToken",
+        "expiresAt",
+        "scopes",
+        "deviceId"
+      ],
+      "title": "ExtensionTokenResponse",
+      "type": "object"
+    },
+    "ExtractInput": {
+      "properties": {
+        "captureId": {
+          "title": "Captureid",
+          "type": "string"
+        },
+        "contentText": {
+          "title": "Contenttext",
+          "type": "string"
+        },
+        "context": {
+          "$ref": "#/$defs/StepContext"
+        },
+        "knowledge": {
+          "items": {
+            "$ref": "#/$defs/Citation"
+          },
+          "title": "Knowledge",
+          "type": "array"
+        },
+        "preferences": {
+          "$ref": "#/$defs/Preferences"
+        },
+        "prior": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/WorkflowExtraction"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "sourceDomain": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourcedomain"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "userNote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Usernote"
+        }
+      },
+      "required": [
+        "captureId",
+        "title",
+        "contentText",
+        "userNote",
+        "sourceDomain",
+        "knowledge",
+        "preferences",
+        "context",
+        "prior"
+      ],
+      "title": "ExtractInput",
+      "type": "object"
+    },
+    "Importance": {
+      "enum": [
+        "blocking",
+        "useful"
+      ],
+      "title": "Importance",
+      "type": "string"
+    },
+    "InformationDensity": {
+      "enum": [
+        "concise",
+        "balanced",
+        "detailed"
+      ],
+      "title": "InformationDensity",
+      "type": "string"
+    },
+    "IngestionStatus": {
+      "enum": [
+        "pending",
+        "ready",
+        "failed"
+      ],
+      "title": "IngestionStatus",
+      "type": "string"
+    },
+    "KnowledgeDocCreate": {
+      "properties": {
+        "content": {
+          "maxLength": 100000,
+          "minLength": 1,
+          "title": "Content",
+          "type": "string"
+        },
+        "sourceDate": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourcedate"
+        },
+        "sourceType": {
+          "$ref": "#/$defs/KnowledgeSourceType",
+          "default": "user_text"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "content"
+      ],
+      "title": "KnowledgeDocCreate",
+      "type": "object"
+    },
+    "KnowledgeDocOut": {
+      "properties": {
+        "chunkCount": {
+          "title": "Chunkcount",
+          "type": "integer"
+        },
+        "conflictsWith": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "title": "Conflictswith",
+          "type": "array"
+        },
+        "contentHash": {
+          "title": "Contenthash",
+          "type": "string"
+        },
+        "createdAt": {
+          "format": "date-time",
+          "title": "Createdat",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "ingestionStatus": {
+          "$ref": "#/$defs/IngestionStatus"
+        },
+        "isSeed": {
+          "default": false,
+          "title": "Isseed",
+          "type": "boolean"
+        },
+        "sourceDate": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourcedate"
+        },
+        "sourceType": {
+          "$ref": "#/$defs/KnowledgeSourceType"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "title",
+        "sourceType",
+        "ingestionStatus",
+        "contentHash",
+        "chunkCount",
+        "sourceDate",
+        "isSeed",
+        "conflictsWith",
+        "createdAt"
+      ],
+      "title": "KnowledgeDocOut",
+      "type": "object"
+    },
+    "KnowledgeSearchRequest": {
+      "properties": {
+        "documentIds": {
+          "anyOf": [
+            {
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Documentids"
+        },
+        "query": {
+          "maxLength": 500,
+          "minLength": 1,
+          "title": "Query",
+          "type": "string"
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "title": "KnowledgeSearchRequest",
+      "type": "object"
+    },
+    "KnowledgeSearchResponse": {
+      "properties": {
+        "results": {
+          "items": {
+            "$ref": "#/$defs/Citation"
+          },
+          "title": "Results",
+          "type": "array"
+        }
+      },
+      "required": [
+        "results"
+      ],
+      "title": "KnowledgeSearchResponse",
+      "type": "object"
+    },
+    "KnowledgeSourceType": {
+      "enum": [
+        "user_text",
+        "user_markdown",
+        "seed_demo"
+      ],
+      "title": "KnowledgeSourceType",
+      "type": "string"
+    },
+    "MeOut": {
+      "properties": {
+        "displayName": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Displayname"
+        },
+        "email": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Email"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "onboardingCompleted": {
+          "default": false,
+          "title": "Onboardingcompleted",
+          "type": "boolean"
+        },
+        "photoUrl": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Photourl"
+        }
+      },
+      "required": [
+        "id",
+        "email",
+        "displayName",
+        "photoUrl",
+        "onboardingCompleted"
+      ],
+      "title": "MeOut",
+      "type": "object"
+    },
+    "NeedsApprovalItem": {
+      "properties": {
+        "actionId": {
+          "format": "uuid",
+          "title": "Actionid",
+          "type": "string"
+        },
+        "summary": {
+          "title": "Summary",
+          "type": "string"
+        },
+        "workflowId": {
+          "format": "uuid",
+          "title": "Workflowid",
+          "type": "string"
+        },
+        "workflowTitle": {
+          "title": "Workflowtitle",
+          "type": "string"
+        }
+      },
+      "required": [
+        "actionId",
+        "workflowId",
+        "workflowTitle",
+        "summary"
+      ],
+      "title": "NeedsApprovalItem",
+      "type": "object"
+    },
+    "NeedsInputItem": {
+      "properties": {
+        "question": {
+          "title": "Question",
+          "type": "string"
+        },
+        "questionId": {
+          "title": "Questionid",
+          "type": "string"
+        },
+        "workflowId": {
+          "format": "uuid",
+          "title": "Workflowid",
+          "type": "string"
+        },
+        "workflowTitle": {
+          "title": "Workflowtitle",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workflowId",
+        "workflowTitle",
+        "questionId",
+        "question"
+      ],
+      "title": "NeedsInputItem",
+      "type": "object"
+    },
+    "NextBestStep": {
+      "properties": {
+        "text": {
+          "title": "Text",
+          "type": "string"
+        },
+        "workflowId": {
+          "format": "uuid",
+          "title": "Workflowid",
+          "type": "string"
+        },
+        "workflowTitle": {
+          "title": "Workflowtitle",
+          "type": "string"
+        }
+      },
+      "required": [
+        "workflowId",
+        "workflowTitle",
+        "text"
+      ],
+      "title": "NextBestStep",
+      "type": "object"
+    },
+    "PacingSupport": {
+      "enum": [
+        "off",
+        "optional_break_cues"
+      ],
+      "title": "PacingSupport",
+      "type": "string"
+    },
+    "PlanAuthor": {
+      "enum": [
+        "agent",
+        "user"
+      ],
+      "title": "PlanAuthor",
+      "type": "string"
+    },
+    "PlanInput": {
+      "properties": {
+        "context": {
+          "$ref": "#/$defs/StepContext"
+        },
+        "existingTasks": {
+          "items": {
+            "$ref": "#/$defs/ExistingTask"
+          },
+          "title": "Existingtasks",
+          "type": "array"
+        },
+        "knowledge": {
+          "items": {
+            "$ref": "#/$defs/Citation"
+          },
+          "title": "Knowledge",
+          "type": "array"
+        },
+        "nextVersion": {
+          "default": 1,
+          "title": "Nextversion",
+          "type": "integer"
+        },
+        "objective": {
+          "title": "Objective",
+          "type": "string"
+        },
+        "preferences": {
+          "$ref": "#/$defs/Preferences"
+        },
+        "questions": {
+          "items": {
+            "$ref": "#/$defs/ClarificationQuestion"
+          },
+          "title": "Questions",
+          "type": "array"
+        },
+        "requirements": {
+          "items": {
+            "$ref": "#/$defs/RequirementItem"
+          },
+          "title": "Requirements",
+          "type": "array"
+        }
+      },
+      "required": [
+        "objective",
+        "requirements",
+        "questions",
+        "knowledge",
+        "existingTasks",
+        "preferences",
+        "context",
+        "nextVersion"
+      ],
+      "title": "PlanInput",
+      "type": "object"
+    },
+    "PlanLayout": {
+      "enum": [
+        "one_step",
+        "full_list",
+        "timeline"
+      ],
+      "title": "PlanLayout",
+      "type": "string"
+    },
+    "PlanPatch": {
+      "properties": {
+        "goal": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Goal"
+        },
+        "rowVersion": {
+          "title": "Rowversion",
+          "type": "integer"
+        },
+        "tasks": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/PlanTaskDraft-Input"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tasks"
+        }
+      },
+      "required": [
+        "rowVersion"
+      ],
+      "title": "PlanPatch",
+      "type": "object"
+    },
+    "PlanStatus": {
+      "enum": [
+        "draft",
+        "approved",
+        "superseded"
+      ],
+      "title": "PlanStatus",
+      "type": "string"
+    },
+    "PlanTaskDraft-Input": {
+      "properties": {
+        "definitionOfDone": {
+          "minLength": 1,
+          "title": "Definitionofdone",
+          "type": "string"
+        },
+        "dependsOnDraftIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Dependsondraftids",
+          "type": "array"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "draftId": {
+          "title": "Draftid",
+          "type": "string"
+        },
+        "dueAt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dueat"
+        },
+        "estimatedMinutes": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estimatedminutes"
+        },
+        "rationale": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rationale"
+        },
+        "requirementIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Requirementids",
+          "type": "array"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "draftId",
+        "title",
+        "definitionOfDone"
+      ],
+      "title": "PlanTaskDraft",
+      "type": "object"
+    },
+    "PlanTaskDraft-Output": {
+      "properties": {
+        "definitionOfDone": {
+          "minLength": 1,
+          "title": "Definitionofdone",
+          "type": "string"
+        },
+        "dependsOnDraftIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Dependsondraftids",
+          "type": "array"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "draftId": {
+          "title": "Draftid",
+          "type": "string"
+        },
+        "dueAt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dueat"
+        },
+        "estimatedMinutes": {
+          "anyOf": [
+            {
+              "maximum": 1440,
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estimatedminutes"
+        },
+        "rationale": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rationale"
+        },
+        "requirementIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Requirementids",
+          "type": "array"
+        },
+        "title": {
+          "maxLength": 200,
+          "minLength": 1,
+          "title": "Title",
+          "type": "string"
+        }
+      },
+      "required": [
+        "draftId",
+        "title",
+        "description",
+        "definitionOfDone",
+        "estimatedMinutes",
+        "dueAt",
+        "dependsOnDraftIds",
+        "requirementIds",
+        "rationale"
+      ],
+      "title": "PlanTaskDraft",
+      "type": "object"
+    },
+    "PlanVersionOut": {
+      "properties": {
+        "createdAt": {
+          "format": "date-time",
+          "title": "Createdat",
+          "type": "string"
+        },
+        "createdBy": {
+          "$ref": "#/$defs/PlanAuthor"
+        },
+        "goal": {
+          "title": "Goal",
+          "type": "string"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "plan": {
+          "$ref": "#/$defs/WorkflowPlanDraft"
+        },
+        "rowVersion": {
+          "title": "Rowversion",
+          "type": "integer"
+        },
+        "status": {
+          "$ref": "#/$defs/PlanStatus"
+        },
+        "updatedAt": {
+          "format": "date-time",
+          "title": "Updatedat",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "integer"
+        },
+        "workflowId": {
+          "format": "uuid",
+          "title": "Workflowid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "workflowId",
+        "version",
+        "rowVersion",
+        "goal",
+        "status",
+        "createdBy",
+        "plan",
+        "createdAt",
+        "updatedAt"
+      ],
+      "title": "PlanVersionOut",
+      "type": "object"
+    },
+    "Preferences": {
+      "properties": {
+        "clarificationHelp": {
+          "$ref": "#/$defs/ClarificationHelp",
+          "default": "draft_message"
+        },
+        "communicationStyle": {
+          "$ref": "#/$defs/CommunicationStyle",
+          "default": "preserve_my_voice"
+        },
+        "informationDensity": {
+          "$ref": "#/$defs/InformationDensity",
+          "default": "balanced"
+        },
+        "pacingSupport": {
+          "$ref": "#/$defs/PacingSupport",
+          "default": "off"
+        },
+        "planLayout": {
+          "$ref": "#/$defs/PlanLayout",
+          "default": "full_list"
+        },
+        "taskGranularity": {
+          "$ref": "#/$defs/TaskGranularity",
+          "default": "balanced"
+        },
+        "timeEstimates": {
+          "$ref": "#/$defs/TimeEstimates",
+          "default": "show"
+        }
+      },
+      "required": [
+        "taskGranularity",
+        "informationDensity",
+        "planLayout",
+        "clarificationHelp",
+        "communicationStyle",
+        "timeEstimates",
+        "pacingSupport"
+      ],
+      "title": "Preferences",
+      "type": "object"
+    },
+    "PreferencesOut": {
+      "properties": {
+        "clarificationHelp": {
+          "$ref": "#/$defs/ClarificationHelp",
+          "default": "draft_message"
+        },
+        "communicationStyle": {
+          "$ref": "#/$defs/CommunicationStyle",
+          "default": "preserve_my_voice"
+        },
+        "consentRecordedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Consentrecordedat"
+        },
+        "consentVersion": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Consentversion"
+        },
+        "informationDensity": {
+          "$ref": "#/$defs/InformationDensity",
+          "default": "balanced"
+        },
+        "isSet": {
+          "default": false,
+          "title": "Isset",
+          "type": "boolean"
+        },
+        "pacingSupport": {
+          "$ref": "#/$defs/PacingSupport",
+          "default": "off"
+        },
+        "planLayout": {
+          "$ref": "#/$defs/PlanLayout",
+          "default": "full_list"
+        },
+        "taskGranularity": {
+          "$ref": "#/$defs/TaskGranularity",
+          "default": "balanced"
+        },
+        "timeEstimates": {
+          "$ref": "#/$defs/TimeEstimates",
+          "default": "show"
+        }
+      },
+      "required": [
+        "taskGranularity",
+        "informationDensity",
+        "planLayout",
+        "clarificationHelp",
+        "communicationStyle",
+        "timeEstimates",
+        "pacingSupport",
+        "consentVersion",
+        "consentRecordedAt",
+        "isSet"
+      ],
+      "title": "PreferencesOut",
+      "type": "object"
+    },
+    "PreferencesPatch": {
+      "properties": {
+        "clarificationHelp": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ClarificationHelp"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "communicationStyle": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CommunicationStyle"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "informationDensity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/InformationDensity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "pacingSupport": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PacingSupport"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "planLayout": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlanLayout"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "taskGranularity": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TaskGranularity"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "timeEstimates": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TimeEstimates"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "PreferencesPatch",
+      "type": "object"
+    },
+    "PrivacyOverview": {
+      "properties": {
+        "capturesCount": {
+          "title": "Capturescount",
+          "type": "integer"
+        },
+        "employerAccess": {
+          "const": "none",
+          "default": "none",
+          "title": "Employeraccess",
+          "type": "string"
+        },
+        "knowledgeDocumentsCount": {
+          "title": "Knowledgedocumentscount",
+          "type": "integer"
+        },
+        "logRetentionNote": {
+          "title": "Logretentionnote",
+          "type": "string"
+        },
+        "modelProcessingNote": {
+          "title": "Modelprocessingnote",
+          "type": "string"
+        },
+        "modelProvider": {
+          "title": "Modelprovider",
+          "type": "string"
+        },
+        "tasksCount": {
+          "title": "Taskscount",
+          "type": "integer"
+        },
+        "workflowsCount": {
+          "title": "Workflowscount",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "capturesCount",
+        "workflowsCount",
+        "tasksCount",
+        "knowledgeDocumentsCount",
+        "modelProvider",
+        "modelProcessingNote",
+        "logRetentionNote",
+        "employerAccess"
+      ],
+      "title": "PrivacyOverview",
+      "type": "object"
+    },
+    "ProposeActionRequest": {
+      "properties": {
+        "planVersionId": {
+          "format": "uuid",
+          "title": "Planversionid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "planVersionId"
+      ],
+      "title": "ProposeActionRequest",
+      "type": "object"
+    },
+    "ProposedActionOut": {
+      "properties": {
+        "actionType": {
+          "$ref": "#/$defs/ActionType"
+        },
+        "approvedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Approvedat"
+        },
+        "createdAt": {
+          "format": "date-time",
+          "title": "Createdat",
+          "type": "string"
+        },
+        "errorCode": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Errorcode"
+        },
+        "executedAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Executedat"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "payload": {
+          "additionalProperties": true,
+          "title": "Payload",
+          "type": "object"
+        },
+        "planVersionId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Planversionid"
+        },
+        "provider": {
+          "default": "ritme",
+          "title": "Provider",
+          "type": "string"
+        },
+        "reasonSummary": {
+          "title": "Reasonsummary",
+          "type": "string"
+        },
+        "resultIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Resultids",
+          "type": "array"
+        },
+        "resultSummary": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Resultsummary"
+        },
+        "status": {
+          "$ref": "#/$defs/ActionStatus"
+        },
+        "verification": {
+          "$ref": "#/$defs/VerificationState",
+          "default": "not_run"
+        },
+        "workflowId": {
+          "format": "uuid",
+          "title": "Workflowid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "workflowId",
+        "planVersionId",
+        "actionType",
+        "provider",
+        "payload",
+        "reasonSummary",
+        "status",
+        "verification",
+        "resultSummary",
+        "resultIds",
+        "errorCode",
+        "approvedAt",
+        "executedAt",
+        "createdAt"
+      ],
+      "title": "ProposedActionOut",
+      "type": "object"
+    },
+    "ProposedChange": {
+      "properties": {
+        "after": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "After"
+        },
+        "before": {
+          "anyOf": [
+            {
+              "additionalProperties": true,
+              "type": "object"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Before"
+        },
+        "changeType": {
+          "$ref": "#/$defs/ChangeType"
+        },
+        "existingTaskId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Existingtaskid"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        }
+      },
+      "required": [
+        "existingTaskId",
+        "changeType",
+        "before",
+        "after",
+        "reason"
+      ],
+      "title": "ProposedChange",
+      "type": "object"
+    },
+    "QuestionStatus": {
+      "enum": [
+        "open",
+        "answered",
+        "deferred"
+      ],
+      "title": "QuestionStatus",
+      "type": "string"
+    },
+    "ReplanInput": {
+      "properties": {
+        "blastRadiusTaskIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Blastradiustaskids",
+          "type": "array"
+        },
+        "changedRequirementId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Changedrequirementid"
+        },
+        "context": {
+          "$ref": "#/$defs/StepContext"
+        },
+        "currentPlan": {
+          "$ref": "#/$defs/WorkflowPlanDraft"
+        },
+        "existingTasks": {
+          "items": {
+            "$ref": "#/$defs/ExistingTask"
+          },
+          "title": "Existingtasks",
+          "type": "array"
+        },
+        "knowledge": {
+          "items": {
+            "$ref": "#/$defs/Citation"
+          },
+          "title": "Knowledge",
+          "type": "array"
+        },
+        "newDueAt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Newdueat"
+        },
+        "newText": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Newtext"
+        },
+        "nextVersion": {
+          "default": 1,
+          "title": "Nextversion",
+          "type": "integer"
+        },
+        "objective": {
+          "title": "Objective",
+          "type": "string"
+        },
+        "preferences": {
+          "$ref": "#/$defs/Preferences"
+        },
+        "questions": {
+          "items": {
+            "$ref": "#/$defs/ClarificationQuestion"
+          },
+          "title": "Questions",
+          "type": "array"
+        },
+        "requirements": {
+          "items": {
+            "$ref": "#/$defs/RequirementItem"
+          },
+          "title": "Requirements",
+          "type": "array"
+        },
+        "trigger": {
+          "$ref": "#/$defs/ReplanTrigger"
+        }
+      },
+      "required": [
+        "objective",
+        "requirements",
+        "questions",
+        "knowledge",
+        "existingTasks",
+        "preferences",
+        "context",
+        "nextVersion",
+        "currentPlan",
+        "trigger",
+        "changedRequirementId",
+        "newText",
+        "newDueAt",
+        "blastRadiusTaskIds"
+      ],
+      "title": "ReplanInput",
+      "type": "object"
+    },
+    "ReplanRequest": {
+      "properties": {
+        "newDueAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Newdueat"
+        },
+        "newText": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Newtext"
+        },
+        "requirementId": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Requirementid"
+        },
+        "trigger": {
+          "$ref": "#/$defs/ReplanTrigger"
+        }
+      },
+      "required": [
+        "trigger"
+      ],
+      "title": "ReplanRequest",
+      "type": "object"
+    },
+    "ReplanResponse": {
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/ProposedActionOut"
+        },
+        "blastRadiusTaskIds": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "title": "Blastradiustaskids",
+          "type": "array"
+        },
+        "diff": {
+          "items": {
+            "$ref": "#/$defs/ProposedChange"
+          },
+          "title": "Diff",
+          "type": "array"
+        },
+        "plan": {
+          "$ref": "#/$defs/PlanVersionOut"
+        }
+      },
+      "required": [
+        "plan",
+        "action",
+        "blastRadiusTaskIds",
+        "diff"
+      ],
+      "title": "ReplanResponse",
+      "type": "object"
+    },
+    "ReplanTrigger": {
+      "enum": [
+        "request_changed",
+        "could_not_work"
+      ],
+      "title": "ReplanTrigger",
+      "type": "string"
+    },
+    "RequirementItem": {
+      "properties": {
+        "certainty": {
+          "$ref": "#/$defs/Certainty"
+        },
+        "evidence": {
+          "items": {
+            "$ref": "#/$defs/EvidenceRef"
+          },
+          "title": "Evidence",
+          "type": "array"
+        },
+        "id": {
+          "title": "Id",
+          "type": "string"
+        },
+        "importance": {
+          "$ref": "#/$defs/Importance"
+        },
+        "kind": {
+          "$ref": "#/$defs/RequirementKind"
+        },
+        "text": {
+          "minLength": 1,
+          "title": "Text",
+          "type": "string"
+        },
+        "userConfirmedAt": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Userconfirmedat"
+        }
+      },
+      "required": [
+        "id",
+        "kind",
+        "text",
+        "certainty",
+        "importance",
+        "evidence",
+        "userConfirmedAt"
+      ],
+      "title": "RequirementItem",
+      "type": "object"
+    },
+    "RequirementKind": {
+      "enum": [
+        "objective",
+        "deliverable",
+        "acceptance_criterion",
+        "deadline",
+        "owner",
+        "dependency",
+        "instruction",
+        "fact",
+        "assumption",
+        "unknown",
+        "contradiction"
+      ],
+      "title": "RequirementKind",
+      "type": "string"
+    },
+    "RequirementPatch": {
+      "description": "Truth Board edits: confirm / edit / reject an item. Confirmed items become the latest truth.",
+      "properties": {
+        "confirm": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirm"
+        },
+        "reject": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Reject"
+        },
+        "text": {
+          "anyOf": [
+            {
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Text"
+        }
+      },
+      "title": "RequirementPatch",
+      "type": "object"
+    },
+    "ResumeCard": {
+      "properties": {
+        "lastCompletedStep": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Lastcompletedstep"
+        },
+        "nextAction": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nextaction"
+        },
+        "openQuestionCount": {
+          "default": 0,
+          "title": "Openquestioncount",
+          "type": "integer"
+        },
+        "sourceTitle": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourcetitle"
+        },
+        "sourceUrl": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Sourceurl"
+        },
+        "status": {
+          "$ref": "#/$defs/WorkflowStatus"
+        },
+        "userNote": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Usernote"
+        }
+      },
+      "required": [
+        "sourceTitle",
+        "sourceUrl",
+        "userNote",
+        "status",
+        "lastCompletedStep",
+        "nextAction",
+        "openQuestionCount"
+      ],
+      "title": "ResumeCard",
+      "type": "object"
+    },
+    "StepContext": {
+      "properties": {
+        "locale": {
+          "default": "en",
+          "title": "Locale",
+          "type": "string"
+        },
+        "timezone": {
+          "default": "UTC",
+          "title": "Timezone",
+          "type": "string"
+        },
+        "today": {
+          "title": "Today",
+          "type": "string"
+        }
+      },
+      "required": [
+        "today",
+        "timezone",
+        "locale"
+      ],
+      "title": "StepContext",
+      "type": "object"
+    },
+    "StepMeta": {
+      "properties": {
+        "attempts": {
+          "default": 1,
+          "title": "Attempts",
+          "type": "integer"
+        },
+        "model": {
+          "title": "Model",
+          "type": "string"
+        },
+        "promptVersion": {
+          "title": "Promptversion",
+          "type": "string"
+        },
+        "repaired": {
+          "default": false,
+          "title": "Repaired",
+          "type": "boolean"
+        },
+        "step": {
+          "$ref": "#/$defs/EngineStep"
+        }
+      },
+      "required": [
+        "step",
+        "promptVersion",
+        "model",
+        "attempts",
+        "repaired"
+      ],
+      "title": "StepMeta",
+      "type": "object"
+    },
+    "TaskGranularity": {
+      "enum": [
+        "small_steps",
+        "balanced",
+        "larger_blocks"
+      ],
+      "title": "TaskGranularity",
+      "type": "string"
+    },
+    "TaskOut": {
+      "properties": {
+        "createdAt": {
+          "format": "date-time",
+          "title": "Createdat",
+          "type": "string"
+        },
+        "createdByActionId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Createdbyactionid"
+        },
+        "definitionOfDone": {
+          "default": "",
+          "title": "Definitionofdone",
+          "type": "string"
+        },
+        "dependsOn": {
+          "items": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "title": "Dependson",
+          "type": "array"
+        },
+        "description": {
+          "default": "",
+          "title": "Description",
+          "type": "string"
+        },
+        "dueAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dueat"
+        },
+        "estimatedMinutes": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Estimatedminutes"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "planVersionId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Planversionid"
+        },
+        "requirementIds": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Requirementids",
+          "type": "array"
+        },
+        "status": {
+          "$ref": "#/$defs/TaskStatus"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "updatedAt": {
+          "format": "date-time",
+          "title": "Updatedat",
+          "type": "string"
+        },
+        "workflowId": {
+          "format": "uuid",
+          "title": "Workflowid",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "workflowId",
+        "planVersionId",
+        "title",
+        "description",
+        "definitionOfDone",
+        "status",
+        "estimatedMinutes",
+        "dueAt",
+        "dependsOn",
+        "requirementIds",
+        "createdByActionId",
+        "createdAt",
+        "updatedAt"
+      ],
+      "title": "TaskOut",
+      "type": "object"
+    },
+    "TaskPatch": {
+      "properties": {
+        "definitionOfDone": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Definitionofdone"
+        },
+        "description": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Description"
+        },
+        "status": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/TaskStatus"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "title": {
+          "anyOf": [
+            {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        }
+      },
+      "title": "TaskPatch",
+      "type": "object"
+    },
+    "TaskStatus": {
+      "enum": [
+        "todo",
+        "in_progress",
+        "blocked",
+        "done",
+        "skipped"
+      ],
+      "title": "TaskStatus",
+      "type": "string"
+    },
+    "TimeEstimates": {
+      "enum": [
+        "show",
+        "hide"
+      ],
+      "title": "TimeEstimates",
+      "type": "string"
+    },
+    "VerificationState": {
+      "enum": [
+        "verified",
+        "unverified",
+        "not_run"
+      ],
+      "title": "VerificationState",
+      "type": "string"
+    },
+    "WorkflowDetail": {
+      "properties": {
+        "actions": {
+          "items": {
+            "$ref": "#/$defs/ProposedActionOut"
+          },
+          "title": "Actions",
+          "type": "array"
+        },
+        "capture": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/CaptureOut"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "latestPlan": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PlanVersionOut"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "questions": {
+          "items": {
+            "$ref": "#/$defs/ClarificationQuestion"
+          },
+          "title": "Questions",
+          "type": "array"
+        },
+        "requirements": {
+          "items": {
+            "$ref": "#/$defs/RequirementItem"
+          },
+          "title": "Requirements",
+          "type": "array"
+        },
+        "resume": {
+          "$ref": "#/$defs/ResumeCard"
+        },
+        "sources": {
+          "items": {
+            "$ref": "#/$defs/Citation"
+          },
+          "title": "Sources",
+          "type": "array"
+        },
+        "tasks": {
+          "items": {
+            "$ref": "#/$defs/TaskOut"
+          },
+          "title": "Tasks",
+          "type": "array"
+        },
+        "workflow": {
+          "$ref": "#/$defs/WorkflowSummary"
+        }
+      },
+      "required": [
+        "workflow",
+        "capture",
+        "requirements",
+        "questions",
+        "latestPlan",
+        "tasks",
+        "actions",
+        "sources",
+        "resume"
+      ],
+      "title": "WorkflowDetail",
+      "type": "object"
+    },
+    "WorkflowExtraction": {
+      "properties": {
+        "confidenceNotes": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Confidencenotes",
+          "type": "array"
+        },
+        "objective": {
+          "title": "Objective",
+          "type": "string"
+        },
+        "questions": {
+          "items": {
+            "$ref": "#/$defs/ClarificationQuestion"
+          },
+          "title": "Questions",
+          "type": "array"
+        },
+        "requirements": {
+          "items": {
+            "$ref": "#/$defs/RequirementItem"
+          },
+          "title": "Requirements",
+          "type": "array"
+        },
+        "schemaVersion": {
+          "default": 1,
+          "title": "Schemaversion",
+          "type": "integer"
+        },
+        "suggestedTitle": {
+          "maxLength": 160,
+          "minLength": 1,
+          "title": "Suggestedtitle",
+          "type": "string"
+        },
+        "summary": {
+          "title": "Summary",
+          "type": "string"
+        }
+      },
+      "required": [
+        "suggestedTitle",
+        "objective",
+        "requirements",
+        "questions",
+        "summary",
+        "confidenceNotes",
+        "schemaVersion"
+      ],
+      "title": "WorkflowExtraction",
+      "type": "object"
+    },
+    "WorkflowPatch": {
+      "properties": {
+        "confirmedDueAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmeddueat"
+        },
+        "nextAction": {
+          "anyOf": [
+            {
+              "maxLength": 500,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nextaction"
+        },
+        "objective": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Objective"
+        },
+        "title": {
+          "anyOf": [
+            {
+              "maxLength": 160,
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Title"
+        },
+        "version": {
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "version"
+      ],
+      "title": "WorkflowPatch",
+      "type": "object"
+    },
+    "WorkflowPlanDraft": {
+      "properties": {
+        "goal": {
+          "title": "Goal",
+          "type": "string"
+        },
+        "proposedChanges": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/ProposedChange"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Proposedchanges"
+        },
+        "tasks": {
+          "items": {
+            "$ref": "#/$defs/PlanTaskDraft-Output"
+          },
+          "title": "Tasks",
+          "type": "array"
+        },
+        "unresolvedItems": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unresolveditems",
+          "type": "array"
+        },
+        "version": {
+          "minimum": 1,
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "version",
+        "goal",
+        "tasks",
+        "unresolvedItems",
+        "proposedChanges"
+      ],
+      "title": "WorkflowPlanDraft",
+      "type": "object"
+    },
+    "WorkflowStatus": {
+      "enum": [
+        "captured",
+        "analyzing",
+        "needs_input",
+        "planning",
+        "ready_for_approval",
+        "in_progress",
+        "completed",
+        "blocked",
+        "failed",
+        "cancelled"
+      ],
+      "title": "WorkflowStatus",
+      "type": "string"
+    },
+    "WorkflowSummary": {
+      "properties": {
+        "captureId": {
+          "anyOf": [
+            {
+              "format": "uuid",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Captureid"
+        },
+        "confirmedDueAt": {
+          "anyOf": [
+            {
+              "format": "date-time",
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Confirmeddueat"
+        },
+        "createdAt": {
+          "format": "date-time",
+          "title": "Createdat",
+          "type": "string"
+        },
+        "currentPlanVersion": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currentplanversion"
+        },
+        "currentStep": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Currentstep"
+        },
+        "id": {
+          "format": "uuid",
+          "title": "Id",
+          "type": "string"
+        },
+        "isDemo": {
+          "default": false,
+          "title": "Isdemo",
+          "type": "boolean"
+        },
+        "nextAction": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Nextaction"
+        },
+        "objective": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Objective"
+        },
+        "paused": {
+          "default": false,
+          "title": "Paused",
+          "type": "boolean"
+        },
+        "status": {
+          "$ref": "#/$defs/WorkflowStatus"
+        },
+        "title": {
+          "title": "Title",
+          "type": "string"
+        },
+        "updatedAt": {
+          "format": "date-time",
+          "title": "Updatedat",
+          "type": "string"
+        },
+        "version": {
+          "title": "Version",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "captureId",
+        "title",
+        "objective",
+        "status",
+        "paused",
+        "currentStep",
+        "nextAction",
+        "confirmedDueAt",
+        "version",
+        "currentPlanVersion",
+        "isDemo",
+        "createdAt",
+        "updatedAt"
+      ],
+      "title": "WorkflowSummary",
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "ActionStatus": {
+      "$ref": "#/$defs/ActionStatus"
+    },
+    "ActionType": {
+      "$ref": "#/$defs/ActionType"
+    },
+    "ActivityEventOut": {
+      "$ref": "#/$defs/ActivityEventOut"
+    },
+    "ActivityPage": {
+      "$ref": "#/$defs/ActivityPage"
+    },
+    "AgentRunStatus": {
+      "$ref": "#/$defs/AgentRunStatus"
+    },
+    "AgentRunTrigger": {
+      "$ref": "#/$defs/AgentRunTrigger"
+    },
+    "AnswerDisposition": {
+      "$ref": "#/$defs/AnswerDisposition"
+    },
+    "AnswerRequest": {
+      "$ref": "#/$defs/AnswerRequest"
+    },
+    "CalendarItem": {
+      "$ref": "#/$defs/CalendarItem"
+    },
+    "CalendarOverview": {
+      "$ref": "#/$defs/CalendarOverview"
+    },
+    "CaptureCreate": {
+      "$ref": "#/$defs/CaptureCreate"
+    },
+    "CaptureCreateResponse": {
+      "$ref": "#/$defs/CaptureCreateResponse"
+    },
+    "CaptureOut": {
+      "$ref": "#/$defs/CaptureOut"
+    },
+    "CaptureSourceType": {
+      "$ref": "#/$defs/CaptureSourceType"
+    },
+    "CaptureStatus": {
+      "$ref": "#/$defs/CaptureStatus"
+    },
+    "Certainty": {
+      "$ref": "#/$defs/Certainty"
+    },
+    "ChangeType": {
+      "$ref": "#/$defs/ChangeType"
+    },
+    "Citation": {
+      "$ref": "#/$defs/Citation"
+    },
+    "ClarificationHelp": {
+      "$ref": "#/$defs/ClarificationHelp"
+    },
+    "ClarificationQuestion": {
+      "$ref": "#/$defs/ClarificationQuestion"
+    },
+    "CollabGuideInput": {
+      "$ref": "#/$defs/CollabGuideInput"
+    },
+    "CollabGuideOutput": {
+      "$ref": "#/$defs/CollabGuideOutput"
+    },
+    "CommunicationStyle": {
+      "$ref": "#/$defs/CommunicationStyle"
+    },
+    "ConnectedDevice": {
+      "$ref": "#/$defs/ConnectedDevice"
+    },
+    "DashboardOut": {
+      "$ref": "#/$defs/DashboardOut"
+    },
+    "DeletionResult": {
+      "$ref": "#/$defs/DeletionResult"
+    },
+    "DisplaySettings": {
+      "$ref": "#/$defs/DisplaySettings"
+    },
+    "DraftClarification": {
+      "$ref": "#/$defs/DraftClarification"
+    },
+    "DraftClarificationInput": {
+      "$ref": "#/$defs/DraftClarificationInput"
+    },
+    "DraftClarificationResponse": {
+      "$ref": "#/$defs/DraftClarificationResponse"
+    },
+    "EngineStep": {
+      "$ref": "#/$defs/EngineStep"
+    },
+    "ErrorBody": {
+      "$ref": "#/$defs/ErrorBody"
+    },
+    "ErrorCode": {
+      "$ref": "#/$defs/ErrorCode"
+    },
+    "ErrorResponse": {
+      "$ref": "#/$defs/ErrorResponse"
+    },
+    "EvidenceRef": {
+      "$ref": "#/$defs/EvidenceRef"
+    },
+    "ExistingTask": {
+      "$ref": "#/$defs/ExistingTask"
+    },
+    "ExtensionConnectRequest": {
+      "$ref": "#/$defs/ExtensionConnectRequest"
+    },
+    "ExtensionRefreshRequest": {
+      "$ref": "#/$defs/ExtensionRefreshRequest"
+    },
+    "ExtensionTokenResponse": {
+      "$ref": "#/$defs/ExtensionTokenResponse"
+    },
+    "ExtractInput": {
+      "$ref": "#/$defs/ExtractInput"
+    },
+    "Importance": {
+      "$ref": "#/$defs/Importance"
+    },
+    "InformationDensity": {
+      "$ref": "#/$defs/InformationDensity"
+    },
+    "IngestionStatus": {
+      "$ref": "#/$defs/IngestionStatus"
+    },
+    "KnowledgeDocCreate": {
+      "$ref": "#/$defs/KnowledgeDocCreate"
+    },
+    "KnowledgeDocOut": {
+      "$ref": "#/$defs/KnowledgeDocOut"
+    },
+    "KnowledgeSearchRequest": {
+      "$ref": "#/$defs/KnowledgeSearchRequest"
+    },
+    "KnowledgeSearchResponse": {
+      "$ref": "#/$defs/KnowledgeSearchResponse"
+    },
+    "KnowledgeSourceType": {
+      "$ref": "#/$defs/KnowledgeSourceType"
+    },
+    "MeOut": {
+      "$ref": "#/$defs/MeOut"
+    },
+    "NeedsApprovalItem": {
+      "$ref": "#/$defs/NeedsApprovalItem"
+    },
+    "NeedsInputItem": {
+      "$ref": "#/$defs/NeedsInputItem"
+    },
+    "NextBestStep": {
+      "$ref": "#/$defs/NextBestStep"
+    },
+    "PacingSupport": {
+      "$ref": "#/$defs/PacingSupport"
+    },
+    "PlanAuthor": {
+      "$ref": "#/$defs/PlanAuthor"
+    },
+    "PlanInput": {
+      "$ref": "#/$defs/PlanInput"
+    },
+    "PlanLayout": {
+      "$ref": "#/$defs/PlanLayout"
+    },
+    "PlanPatch": {
+      "$ref": "#/$defs/PlanPatch"
+    },
+    "PlanStatus": {
+      "$ref": "#/$defs/PlanStatus"
+    },
+    "PlanTaskDraft-Input": {
+      "$ref": "#/$defs/PlanTaskDraft-Input"
+    },
+    "PlanTaskDraft-Output": {
+      "$ref": "#/$defs/PlanTaskDraft-Output"
+    },
+    "PlanVersionOut": {
+      "$ref": "#/$defs/PlanVersionOut"
+    },
+    "Preferences": {
+      "$ref": "#/$defs/Preferences"
+    },
+    "PreferencesOut": {
+      "$ref": "#/$defs/PreferencesOut"
+    },
+    "PreferencesPatch": {
+      "$ref": "#/$defs/PreferencesPatch"
+    },
+    "PrivacyOverview": {
+      "$ref": "#/$defs/PrivacyOverview"
+    },
+    "ProposeActionRequest": {
+      "$ref": "#/$defs/ProposeActionRequest"
+    },
+    "ProposedActionOut": {
+      "$ref": "#/$defs/ProposedActionOut"
+    },
+    "ProposedChange": {
+      "$ref": "#/$defs/ProposedChange"
+    },
+    "QuestionStatus": {
+      "$ref": "#/$defs/QuestionStatus"
+    },
+    "ReplanInput": {
+      "$ref": "#/$defs/ReplanInput"
+    },
+    "ReplanRequest": {
+      "$ref": "#/$defs/ReplanRequest"
+    },
+    "ReplanResponse": {
+      "$ref": "#/$defs/ReplanResponse"
+    },
+    "ReplanTrigger": {
+      "$ref": "#/$defs/ReplanTrigger"
+    },
+    "RequirementItem": {
+      "$ref": "#/$defs/RequirementItem"
+    },
+    "RequirementKind": {
+      "$ref": "#/$defs/RequirementKind"
+    },
+    "RequirementPatch": {
+      "$ref": "#/$defs/RequirementPatch"
+    },
+    "ResumeCard": {
+      "$ref": "#/$defs/ResumeCard"
+    },
+    "StepContext": {
+      "$ref": "#/$defs/StepContext"
+    },
+    "StepMeta": {
+      "$ref": "#/$defs/StepMeta"
+    },
+    "TaskGranularity": {
+      "$ref": "#/$defs/TaskGranularity"
+    },
+    "TaskOut": {
+      "$ref": "#/$defs/TaskOut"
+    },
+    "TaskPatch": {
+      "$ref": "#/$defs/TaskPatch"
+    },
+    "TaskStatus": {
+      "$ref": "#/$defs/TaskStatus"
+    },
+    "TimeEstimates": {
+      "$ref": "#/$defs/TimeEstimates"
+    },
+    "VerificationState": {
+      "$ref": "#/$defs/VerificationState"
+    },
+    "WorkflowDetail": {
+      "$ref": "#/$defs/WorkflowDetail"
+    },
+    "WorkflowExtraction": {
+      "$ref": "#/$defs/WorkflowExtraction"
+    },
+    "WorkflowPatch": {
+      "$ref": "#/$defs/WorkflowPatch"
+    },
+    "WorkflowPlanDraft": {
+      "$ref": "#/$defs/WorkflowPlanDraft"
+    },
+    "WorkflowStatus": {
+      "$ref": "#/$defs/WorkflowStatus"
+    },
+    "WorkflowSummary": {
+      "$ref": "#/$defs/WorkflowSummary"
+    }
+  },
+  "title": "RitmeContracts",
+  "type": "object"
+}

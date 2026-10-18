@@ -1,0 +1,31 @@
+{
+  "name": "ritme",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@12.14.0",
+  "engines": { "node": ">=20" },
+  "devDependencies": {
+    "dependency-cruiser": "^16.8.0",
+    "typescript": "^5.6.0"
+  },
+  "scripts": {
+    "dev": "node infra/scripts/dev.mjs",
+    "dev:frontend": "pnpm --filter @ritme/frontend dev",
+    "dev:backend": "uv run --directory apps/backend uvicorn app.main:app --reload --port 8080",
+    "dev:worker": "uv run --directory apps/backend uvicorn app.worker.main:app --reload --port 8081",
+    "build": "pnpm -r --filter \"./apps/**\" --filter \"./packages/**\" build",
+    "lint": "pnpm -r lint && uv run ruff check . && uv run lint-imports",
+    "typecheck": "pnpm -r typecheck && uv run mypy apps/backend/app packages/ai-engine/src packages/contracts/src",
+    "test": "pnpm -r test && uv run pytest",
+    "test:e2e": "pnpm --filter @ritme/frontend test:e2e",
+    "db:migrate": "uv run --directory apps/backend alembic upgrade head",
+    "db:seed": "uv run --directory apps/backend python -m app.db.seed",
+    "eval": "uv run python evals/run.py",
+    "contracts:gen": "uv run python packages/contracts/scripts/export_schema.py && pnpm --filter @ritme/api-client generate",
+    "lint:boundaries": "depcruise --config .dependency-cruiser.cjs apps packages --include-only \"^(apps|packages)\"",
+    "contracts:check": "node infra/scripts/contracts-check.mjs",
+    "infra:auth": "npx --yes firebase-tools emulators:start --only auth --project demo-ritme --config infra/firebase/firebase.json",
+    "infra:up":"docker compose -f infra/docker-compose.yml up -d",
+    "infra:down": "docker compose -f infra/docker-compose.yml down"
+  }
+}

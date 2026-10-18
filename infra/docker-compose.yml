@@ -1,0 +1,20 @@
+# Local development services. Postgres only; the Firebase Auth emulator runs via `pnpm infra:auth`.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: ritme
+      POSTGRES_PASSWORD: ritme_local_only
+      POSTGRES_DB: ritme
+    ports:
+      - "5433:5432"  # 5433 on the host: a local Postgres often already owns 5432
+    volumes:
+      - ritme_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ritme -d ritme"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  ritme_pg:

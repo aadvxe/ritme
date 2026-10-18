@@ -1,0 +1,28 @@
+[project]
+name = "ritme-backend"
+version = "0.1.0"
+description = "Ritme backend: FastAPI API + worker, domain services, persistence, tools."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "ritme-contracts",
+  "ritme-ai-engine",
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.32",
+  "sqlalchemy[asyncio]>=2.0",
+  "alembic>=1.14",
+  "psycopg[binary,pool]>=3.2",
+  "pydantic>=2.9",
+  "pydantic-settings>=2.6",
+  "firebase-admin>=6.6",
+  "pyjwt>=2.9",
+  "google-cloud-tasks>=2.17",
+  "google-auth>=2.35",
+  "structlog>=24.4",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["app"]

@@ -1,0 +1,200 @@
+{
+  "id": "s02_vague_deadline",
+  "specNumber": 2,
+  "title": "Vague deadline (\"Friday\", \"soon\", \"when you can\")",
+  "description": "Relative/vague dates never become exact timestamps; each becomes a blocking question; a vague answer still does not create a date.",
+  "synthetic": true,
+  "capture": {
+    "contentText": "Can you finish the client FAQ page? I need it by Friday. Please review it soon, and send it over when you can.",
+    "sourcePageTitle": "Client FAQ"
+  },
+  "llm": {
+    "plan": {
+      "then": {
+        "goal": "Finish the client FAQ page",
+        "tasks": [
+          {
+            "draftId": "t1",
+            "title": "Finish the client FAQ page",
+            "description": "",
+            "definitionOfDone": "The FAQ page is complete",
+            "dependsOnDraftIds": [],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 60,
+            "dueAt": "2026-10-23T17:00:00+00:00"
+          },
+          {
+            "draftId": "t2",
+            "title": "Review the FAQ page",
+            "description": "",
+            "definitionOfDone": "The page is reviewed",
+            "dependsOnDraftIds": [
+              "t1"
+            ],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 20,
+            "dueAt": "2026-10-23T12:00:00+00:00"
+          }
+        ],
+        "unresolvedItems": []
+      }
+    }
+  },
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "finish the client FAQ page",
+          "kind": "objective",
+          "certainty": "explicit"
+        },
+        {
+          "match": "by Friday",
+          "kind": "deadline",
+          "certainty": "unknown",
+          "importance": "blocking"
+        },
+        {
+          "match": "soon",
+          "kind": "deadline",
+          "certainty": "unknown",
+          "importance": "blocking"
+        }
+      ]
+    },
+    "clarification": {
+      "blocking": true,
+      "topics": [
+        "Friday",
+        "soon"
+      ]
+    }
+  },
+  "steps": [
+    {
+      "do": "plan",
+      "expect": 422,
+      "save": "gate"
+    },
+    {
+      "do": "answer",
+      "answer": "Friday, but I do not have the exact time yet"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "needs_input",
+      "id": "analysis-stops-for-input"
+    },
+    {
+      "check": "requirement",
+      "snap": "initial",
+      "count": {
+        "eq": 0
+      },
+      "kind": "deadline",
+      "certainty": "explicit",
+      "id": "no-vague-deadline-marked-explicit"
+    },
+    {
+      "check": "requirement",
+      "snap": "initial",
+      "count": {
+        "min": 2
+      },
+      "kind": "deadline",
+      "certainty": "unknown",
+      "importance": "blocking",
+      "id": "vague-deadlines-are-blockers"
+    },
+    {
+      "check": "requirement",
+      "snap": "initial",
+      "count": {
+        "eq": 0
+      },
+      "match": "\\d{4}-\\d{2}-\\d{2}",
+      "id": "no-exact-date-invented-in-requirements"
+    },
+    {
+      "check": "question",
+      "snap": "initial",
+      "count": {
+        "min": 1
+      },
+      "blocking": true,
+      "match": "Friday",
+      "id": "question-about-friday"
+    },
+    {
+      "check": "question",
+      "snap": "initial",
+      "count": {
+        "min": 1
+      },
+      "blocking": true,
+      "match": "soon",
+      "id": "question-about-soon"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "workflow.confirmedDueAt",
+      "op": "is_null"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "latestPlan",
+      "op": "is_null",
+      "id": "no-plan-before-blockers-resolved"
+    },
+    {
+      "check": "value",
+      "snap": "saved:gate",
+      "path": "body.error.code",
+      "op": "eq",
+      "value": "invalid_action",
+      "id": "plan-gate-refuses-with-open-blockers"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "ready_for_approval",
+      "id": "plan-after-answers"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "latestPlan.plan.tasks.*.dueAt",
+      "op": "all_null",
+      "fakeOnly": true,
+      "id": "vague-answer-does-not-create-a-date-even-if-model-invents-one"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "workflow.confirmedDueAt",
+      "op": "is_null",
+      "id": "deadline-still-unconfirmed"
+    },
+    {
+      "check": "llm_calls",
+      "step": "plan",
+      "count": {
+        "eq": 1
+      },
+      "fakeOnly": true
+    }
+  ]
+}

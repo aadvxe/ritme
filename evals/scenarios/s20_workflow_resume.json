@@ -1,0 +1,241 @@
+{
+  "id": "s20_workflow_resume",
+  "specNumber": 20,
+  "title": "Workflow reload / resume after an incomplete run",
+  "description": "A capture is saved before analysis; a worker dies mid-run; reload shows saved state and the redelivered run resumes without duplicating plans, actions or requirements.",
+  "synthetic": true,
+  "capture": {
+    "contentText": "Please compile the customer feedback digest for the product team. It should group comments by theme. Needed by 2026-11-27."
+  },
+  "drain": false,
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "customer feedback digest",
+          "kind": "objective",
+          "certainty": "explicit"
+        },
+        {
+          "match": "2026-11-27",
+          "kind": "deadline",
+          "certainty": "explicit"
+        }
+      ],
+      "snapshot": "final"
+    }
+  },
+  "variants": [
+    {
+      "name": "worker_died_during_analysis",
+      "override": {
+        "steps": [
+          {
+            "do": "inject",
+            "kind": "interrupt_run",
+            "workflow_status": "analyzing"
+          },
+          {
+            "do": "snapshot",
+            "name": "reload_1"
+          },
+          {
+            "do": "snapshot",
+            "name": "reload_2"
+          },
+          {
+            "do": "drain"
+          },
+          {
+            "do": "snapshot",
+            "name": "resumed"
+          },
+          {
+            "do": "inject",
+            "kind": "redeliver_runs"
+          },
+          {
+            "do": "drain"
+          }
+        ],
+        "extraAssertions": [
+          {
+            "check": "value",
+            "snap": "resumed",
+            "path": "workflow.status",
+            "op": "eq",
+            "value": "ready_for_approval",
+            "id": "redelivered-run-resumes-to-a-plan"
+          },
+          {
+            "check": "value",
+            "snap": "final",
+            "path": "workflow.status",
+            "op": "eq",
+            "value": "ready_for_approval",
+            "id": "redelivery-of-a-finished-run-is-a-no-op"
+          }
+        ]
+      }
+    },
+    {
+      "name": "worker_died_during_planning",
+      "override": {
+        "steps": [
+          {
+            "do": "inject",
+            "kind": "interrupt_run",
+            "workflow_status": "planning"
+          },
+          {
+            "do": "drain"
+          },
+          {
+            "do": "snapshot",
+            "name": "after_redelivery"
+          },
+          {
+            "do": "analyze"
+          }
+        ],
+        "extraAssertions": [
+          {
+            "check": "value",
+            "snap": "after_redelivery",
+            "path": "workflow.status",
+            "op": "in",
+            "value": [
+              "failed",
+              "ready_for_approval"
+            ],
+            "id": "mid-plan-crash-ends-recoverable-never-stuck"
+          },
+          {
+            "check": "value",
+            "snap": "final",
+            "path": "workflow.status",
+            "op": "eq",
+            "value": "ready_for_approval",
+            "id": "user-retry-completes-the-workflow"
+          }
+        ]
+      }
+    },
+    {
+      "name": "queue_message_lost",
+      "override": {
+        "steps": [
+          {
+            "do": "inject",
+            "kind": "drop_enqueue"
+          },
+          {
+            "do": "snapshot",
+            "name": "stuck"
+          },
+          {
+            "do": "analyze"
+          }
+        ],
+        "assertions": [
+          {
+            "check": "value",
+            "snap": "stuck",
+            "path": "workflow.status",
+            "op": "eq",
+            "value": "captured",
+            "id": "capture-still-saved-while-run-message-is-lost"
+          },
+          {
+            "check": "value",
+            "snap": "final",
+            "path": "workflow.status",
+            "op": "ne",
+            "value": "captured",
+            "knownIssue": "backend: if the queue message for a run is lost (enqueue failed, post_capture swallows the error), the run row stays `waiting`; POST /captures/{id}/analyze then sees a live run and returns without re-enqueueing, so the capture stays `captured` and the user's 'Analyse' press does nothing.",
+            "id": "analyse-press-recovers-a-lost-queue-message"
+          },
+          {
+            "check": "value",
+            "snap": "final",
+            "path": "capture.contentText",
+            "op": "contains",
+            "value": "customer feedback digest",
+            "id": "capture-text-never-lost"
+          }
+        ],
+        "annotations": {
+          "extraction": null
+        }
+      }
+    }
+  ],
+  "steps": [],
+  "assertions": [
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "captured",
+      "id": "capture-saved-before-any-analysis"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "capture.contentText",
+      "op": "contains",
+      "value": "customer feedback digest"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "resume.nextAction",
+      "op": "not_null",
+      "id": "resume-card-has-a-next-step"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "requirements",
+      "op": "len_eq",
+      "value": 0
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "requirements",
+      "op": "len_min",
+      "value": 1
+    },
+    {
+      "check": "count",
+      "what": "plan_versions",
+      "count": {
+        "eq": 1
+      },
+      "id": "exactly-one-live-draft-plan",
+      "where": {
+        "status": "draft"
+      }
+    },
+    {
+      "check": "count",
+      "what": "proposed_actions",
+      "count": {
+        "eq": 1
+      },
+      "id": "exactly-one-pending-action",
+      "where": {
+        "status": "pending_approval"
+      }
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "resume.nextAction",
+      "op": "not_null",
+      "id": "resume-card-after-resume"
+    }
+  ]
+}

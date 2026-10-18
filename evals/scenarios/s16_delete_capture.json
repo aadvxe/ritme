@@ -1,0 +1,160 @@
+{
+  "id": "s16_delete_capture",
+  "specNumber": 16,
+  "title": "User deletes a capture",
+  "description": "Deleting a capture removes the workflow, requirements, plans, actions and tasks derived from it, leaves other captures and the Context Library alone, and the text no longer appears in a data export.",
+  "synthetic": true,
+  "knowledge": [
+    {
+      "title": "Runbook style notes",
+      "content": "# Style\n\nRunbooks list steps as numbered actions."
+    }
+  ],
+  "capture": {
+    "contentText": "Please prepare the Zephyr-4471 migration runbook. It should cover rollback steps and owner contacts. It is due 2026-12-02."
+  },
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "Zephyr-4471 migration runbook",
+          "kind": "objective",
+          "certainty": "explicit"
+        },
+        {
+          "match": "2026-12-02",
+          "kind": "deadline",
+          "certainty": "explicit"
+        }
+      ]
+    },
+    "clarification": {
+      "blocking": false
+    }
+  },
+  "steps": [
+    {
+      "do": "approve_execute"
+    },
+    {
+      "do": "http",
+      "method": "POST",
+      "path": "/captures",
+      "body": {
+        "contentText": "Please book the offsite venue for the team. It must seat 12 people. Needed by 2026-12-09.",
+        "sourceType": "manual_text",
+        "idempotencyKey": "eval-s16-control-key"
+      },
+      "expect": 201,
+      "save": "control"
+    },
+    {
+      "do": "drain"
+    },
+    {
+      "do": "delete_capture",
+      "save": "delete"
+    },
+    {
+      "do": "http",
+      "path": "/workflows/{wf}",
+      "expect": 404
+    },
+    {
+      "do": "http",
+      "path": "/captures/{capture}",
+      "expect": 404
+    }
+  ],
+  "assertions": [
+    {
+      "check": "value",
+      "snap": "saved:delete",
+      "path": "body.deleted",
+      "op": "eq",
+      "value": true
+    },
+    {
+      "check": "value",
+      "snap": "saved:delete",
+      "path": "body.removed.tasks",
+      "op": "min",
+      "value": 1,
+      "id": "deletion-reports-what-it-removed"
+    },
+    {
+      "check": "count",
+      "what": "captures",
+      "count": {
+        "eq": 1
+      },
+      "id": "control-capture-survives"
+    },
+    {
+      "check": "count",
+      "what": "workflows",
+      "count": {
+        "eq": 1
+      }
+    },
+    {
+      "check": "count",
+      "what": "tasks",
+      "count": {
+        "eq": 0
+      },
+      "id": "derived-tasks-removed"
+    },
+    {
+      "check": "count",
+      "what": "requirements",
+      "count": {
+        "min": 1
+      },
+      "id": "control-workflow-derived-data-untouched",
+      "where": {
+        "workflow_id": "$saved:control:body.workflow.id"
+      }
+    },
+    {
+      "check": "count",
+      "what": "proposed_actions",
+      "count": {
+        "eq": 1
+      },
+      "id": "only-control-pending-action-remains"
+    },
+    {
+      "check": "count",
+      "what": "plan_versions",
+      "count": {
+        "eq": 1
+      }
+    },
+    {
+      "check": "count",
+      "what": "knowledge_documents",
+      "count": {
+        "eq": 1
+      },
+      "id": "context-library-not-deleted-with-a-capture"
+    },
+    {
+      "check": "activity",
+      "eventType": "capture_deleted",
+      "count": {
+        "eq": 1
+      }
+    },
+    {
+      "check": "text_absent",
+      "regex": "Zephyr",
+      "id": "deleted-text-not-in-stored-derived-content"
+    },
+    {
+      "check": "export_absent",
+      "regex": "Zephyr-4471",
+      "id": "deleted-text-not-in-data-export"
+    }
+  ]
+}

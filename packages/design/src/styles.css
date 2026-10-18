@@ -1,0 +1,77 @@
+@import "@fontsource/poppins/300.css";
+@import "@fontsource/poppins/400.css";
+@import "@fontsource/poppins/500.css";
+@import "@fontsource/poppins/600.css";
+@import "@fontsource/poppins/700.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Tokens are space-separated RGB triplets so Tailwind opacity modifiers work. */
+:root {
+  --rt-primary: 92 103 242; /* #5C67F2 */
+  --rt-primary-strong: 74 85 194; /* #4a55c2 */
+  --rt-navy: 21 29 72; /* #151D48 */
+  --rt-bg: 248 250 252; /* #F8FAFC */
+  --rt-surface: 255 255 255;
+  --rt-border: 226 232 240; /* #E2E8F0 */
+  --rt-text: 30 41 59; /* #1E293B */
+  --rt-text-secondary: 71 85 105; /* #475569 */
+  --rt-text-muted: 100 116 139; /* #64748B */
+
+  /* tint (background) + fg (text/icon). fg values are AA on their tint and on white. */
+  --rt-fact: 118 200 147; /* #76c893 tint source */
+  --rt-fact-fg: 22 101 52; /* #166534 */
+  --rt-assumption: 255 209 102; /* #ffd166 */
+  --rt-assumption-fg: 146 64 14; /* #92400E */
+  --rt-blocker: 240 138 93; /* #f08a5d */
+  --rt-blocker-fg: 154 52 18; /* #9A3412 */
+  --rt-info: 92 103 242;
+  --rt-info-fg: 74 85 194;
+  --rt-error: 250 90 125; /* #FA5A7D */
+  --rt-error-fg: 180 35 24; /* #B42318 */
+}
+
+html {
+  font-family: Poppins, ui-sans-serif, system-ui, sans-serif;
+  -webkit-text-size-adjust: 100%;
+}
+
+html[data-text-size="small"] { font-size: 15px; }
+html[data-text-size="medium"] { font-size: 16px; }
+html[data-text-size="large"] { font-size: 18px; }
+
+body {
+  @apply bg-background text-text antialiased;
+}
+
+/* Visible focus everywhere (WCAG 2.4.7 / 2.4.11). */
+:where(a, button, input, textarea, select, summary, [role="tab"], [tabindex]):focus-visible {
+  outline: 2px solid rgb(var(--rt-primary-strong));
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+.scrollbar-none { scrollbar-width: none; }
+.scrollbar-none::-webkit-scrollbar { display: none; }
+
+/* Reduced motion: system preference OR explicit user override in Display settings. */
+@media (prefers-reduced-motion: reduce) {
+  html:not([data-reduce-motion="off"]) *,
+  html:not([data-reduce-motion="off"]) *::before,
+  html:not([data-reduce-motion="off"]) *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+html[data-reduce-motion="on"] *,
+html[data-reduce-motion="on"] *::before,
+html[data-reduce-motion="on"] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
+  scroll-behavior: auto !important;
+}

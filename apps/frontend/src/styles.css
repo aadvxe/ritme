@@ -1,0 +1,53 @@
+/* App-level styles. Tokens, fonts, focus rings and the reduced-motion rules come from @ritme/design/styles.css. */
+
+/* Display settings (Settings → Display) arrive as data attributes on <html>. */
+:root {
+  --rt-space: 1.5rem;
+  --rt-pad: 1.5rem;
+}
+html[data-density="compact"] {
+  --rt-space: 0.875rem;
+  --rt-pad: 1rem;
+}
+html[data-density="spacious"] {
+  --rt-space: 2.25rem;
+  --rt-pad: 2rem;
+}
+
+.rt-stack > * + * {
+  margin-top: var(--rt-space);
+}
+.rt-pad {
+  padding: var(--rt-pad);
+}
+
+main:focus {
+  outline: none;
+}
+
+/* Controls need a 24px minimum target (WCAG 2.5.8) even at small text sizes. */
+button,
+[role="tab"],
+[role="radio"],
+[role="switch"],
+a.rt-target {
+  min-height: 24px;
+}
+
+/* Login showcase blobs. Static fallback colours are in the inline gradients; motion comes from the preset's
+   animate-blob-* classes and is switched off by the reduced-motion rules in the design package. */
+.rt-blob {
+  will-change: transform;
+}
+
+/* Timeline view */
+.rt-timeline-lane {
+  position: relative;
+}
+
+@media print {
+  aside,
+  header[role="banner"] {
+    display: none;
+  }
+}

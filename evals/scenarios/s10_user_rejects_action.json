@@ -1,0 +1,161 @@
+{
+  "id": "s10_user_rejects_action",
+  "specNumber": 10,
+  "title": "User rejects the proposed action",
+  "description": "Rejection writes nothing, cannot be approved or executed afterwards, and the user can still ask for a new plan.",
+  "synthetic": true,
+  "capture": {
+    "contentText": "Please draft the supplier onboarding pack. Include a checklist and a welcome email. Due 2026-12-10."
+  },
+  "llm": {
+    "plan": {
+      "then": {
+        "goal": "Draft the supplier onboarding pack",
+        "tasks": [
+          {
+            "draftId": "t1",
+            "title": "Draft the checklist",
+            "description": "",
+            "definitionOfDone": "Checklist drafted",
+            "dependsOnDraftIds": [],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 30
+          },
+          {
+            "draftId": "t2",
+            "title": "Draft the welcome email",
+            "description": "",
+            "definitionOfDone": "Email drafted",
+            "dependsOnDraftIds": [
+              "t1"
+            ],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 20
+          },
+          {
+            "draftId": "t3",
+            "title": "Bundle the pack",
+            "description": "",
+            "definitionOfDone": "Pack bundled",
+            "dependsOnDraftIds": [
+              "t2"
+            ],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 10
+          }
+        ],
+        "unresolvedItems": []
+      }
+    }
+  },
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "supplier onboarding pack",
+          "kind": "objective",
+          "certainty": "explicit"
+        },
+        {
+          "match": "2026-12-10",
+          "kind": "deadline",
+          "certainty": "explicit"
+        }
+      ]
+    },
+    "clarification": {
+      "blocking": false
+    }
+  },
+  "steps": [
+    {
+      "do": "reject"
+    },
+    {
+      "do": "snapshot",
+      "name": "rejected"
+    },
+    {
+      "do": "approve",
+      "action": "rejected",
+      "expect": 422
+    },
+    {
+      "do": "execute",
+      "action": "rejected",
+      "expect": 422
+    },
+    {
+      "do": "plan"
+    },
+    {
+      "do": "approve_execute"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "value",
+      "snap": "rejected",
+      "path": "tasks",
+      "op": "len_eq",
+      "value": 0,
+      "id": "rejection-wrote-nothing"
+    },
+    {
+      "check": "value",
+      "snap": "rejected",
+      "path": "actions.0.status",
+      "op": "eq",
+      "value": "rejected"
+    },
+    {
+      "check": "value",
+      "snap": "rejected",
+      "path": "workflow.nextAction",
+      "op": "regex",
+      "value": "rejected",
+      "id": "user-told-what-happened"
+    },
+    {
+      "check": "count",
+      "what": "proposed_actions",
+      "count": {
+        "eq": 1
+      },
+      "where": {
+        "status": "rejected"
+      }
+    },
+    {
+      "check": "count",
+      "what": "proposed_actions",
+      "count": {
+        "eq": 1
+      },
+      "where": {
+        "status": "succeeded"
+      }
+    },
+    {
+      "check": "count",
+      "what": "tasks",
+      "count": {
+        "eq": 3
+      },
+      "id": "only-the-new-approved-plan-wrote-tasks"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "in_progress"
+    }
+  ]
+}

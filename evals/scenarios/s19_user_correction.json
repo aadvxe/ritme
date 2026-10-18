@@ -1,0 +1,193 @@
+{
+  "id": "s19_user_correction",
+  "specNumber": 19,
+  "title": "User correction contradicts extracted content",
+  "description": "The user corrects an extracted requirement; a later re-analysis (model repeats the stale reading) never overwrites it, and the plan is built from the corrected text.",
+  "synthetic": true,
+  "capture": {
+    "contentText": "Please prepare the quarterly board update as a slide deck with five slides. Send it to the CFO by next week."
+  },
+  "llm": {
+    "extract": {
+      "then": {
+        "suggestedTitle": "Quarterly board update",
+        "objective": "Prepare the quarterly board update and send it to the CFO.",
+        "requirements": [
+          {
+            "id": "r1",
+            "kind": "objective",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "Prepare the quarterly board update and send it to the CFO.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "Please prepare the quarterly board update"
+              }
+            ]
+          },
+          {
+            "id": "r2",
+            "kind": "deliverable",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "The update is a slide deck with five slides.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "slide deck with five slides"
+              }
+            ]
+          },
+          {
+            "id": "r3",
+            "kind": "instruction",
+            "certainty": "explicit",
+            "importance": "useful",
+            "text": "Send it to the CFO.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "Send it to the CFO"
+              }
+            ]
+          },
+          {
+            "id": "r4",
+            "kind": "deadline",
+            "certainty": "explicit",
+            "importance": "blocking",
+            "text": "Due by next week.",
+            "evidence": [
+              {
+                "sourceId": "$capture",
+                "excerpt": "by next week"
+              }
+            ]
+          }
+        ],
+        "questions": [],
+        "summary": "A five-slide board update for the CFO, due next week.",
+        "confidenceNotes": []
+      }
+    }
+  },
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "slide deck with five slides",
+          "kind": "deliverable",
+          "certainty": "explicit"
+        },
+        {
+          "match": "by next week",
+          "kind": "deadline",
+          "certainty": "unknown",
+          "importance": "blocking"
+        }
+      ]
+    },
+    "clarification": {
+      "blocking": true,
+      "topics": [
+        "next week"
+      ]
+    }
+  },
+  "steps": [
+    {
+      "do": "edit_requirement",
+      "requirement": "r2",
+      "text": "The board update is a one-page memo, not a slide deck."
+    },
+    {
+      "do": "snapshot",
+      "name": "edited"
+    },
+    {
+      "do": "inject",
+      "kind": "rerun_analysis"
+    },
+    {
+      "do": "drain"
+    },
+    {
+      "do": "snapshot",
+      "name": "after_rerun"
+    },
+    {
+      "do": "answer",
+      "answer": "Next Friday",
+      "due": "+7d"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "requirement",
+      "snap": "edited",
+      "count": {
+        "eq": 1
+      },
+      "confirmed": true,
+      "match": "one-page memo",
+      "id": "edit-becomes-the-confirmed-truth"
+    },
+    {
+      "check": "requirement",
+      "snap": "after_rerun",
+      "count": {
+        "eq": 1
+      },
+      "confirmed": true,
+      "match": "one-page memo",
+      "id": "re-analysis-kept-the-users-correction"
+    },
+    {
+      "check": "value",
+      "snap": "after_rerun",
+      "path": "requirements.*.text",
+      "op": "not_regex",
+      "value": "slide deck with five slides",
+      "id": "stale-model-reading-did-not-come-back"
+    },
+    {
+      "check": "value",
+      "snap": "after_rerun",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "needs_input"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "latestPlan.plan.tasks.*.title",
+      "op": "regex",
+      "value": "one-page memo",
+      "id": "plan-built-from-corrected-text"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "latestPlan.plan.tasks.*.title",
+      "op": "not_regex",
+      "value": "five slides"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "ready_for_approval"
+    },
+    {
+      "check": "llm_calls",
+      "step": "extract",
+      "count": {
+        "eq": 2
+      },
+      "fakeOnly": true
+    }
+  ],
+  "liveSkip": "steps reference scripted requirement ids (edit r2) and need a model that repeats a stale reading"
+}

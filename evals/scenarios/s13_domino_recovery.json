@@ -1,0 +1,326 @@
+{
+  "id": "s13_domino_recovery",
+  "specNumber": 13,
+  "title": "Deadline changes after tasks exist (Domino Recovery)",
+  "description": "Moving the deadline proposes a visible diff, keeps completed work, changes nothing before approval, and dates only follow the user's confirmed new date.",
+  "synthetic": true,
+  "capture": {
+    "contentText": "Please finish the supplier onboarding pack. It is due 2026-12-18 17:00 UTC. The pack needs a checklist, a welcome email and an access form."
+  },
+  "llm": {
+    "plan": {
+      "then": {
+        "goal": "Finish the supplier onboarding pack",
+        "tasks": [
+          {
+            "draftId": "t1",
+            "title": "Collect the supplier details",
+            "description": "",
+            "definitionOfDone": "Details are in one place",
+            "dependsOnDraftIds": [],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 20
+          },
+          {
+            "draftId": "t2",
+            "title": "Write the checklist",
+            "description": "",
+            "definitionOfDone": "Checklist written",
+            "dependsOnDraftIds": [
+              "t1"
+            ],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 30
+          },
+          {
+            "draftId": "t3",
+            "title": "Write the welcome email",
+            "description": "",
+            "definitionOfDone": "Email written",
+            "dependsOnDraftIds": [
+              "t1"
+            ],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 20
+          },
+          {
+            "draftId": "t4",
+            "title": "Build the access form",
+            "description": "",
+            "definitionOfDone": "Form built",
+            "dependsOnDraftIds": [],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 25
+          },
+          {
+            "draftId": "t5",
+            "title": "Send the pack to procurement",
+            "description": "",
+            "definitionOfDone": "Pack sent",
+            "dependsOnDraftIds": [
+              "t2",
+              "t3",
+              "t4"
+            ],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 5
+          }
+        ],
+        "unresolvedItems": []
+      }
+    }
+  },
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "supplier onboarding pack",
+          "kind": "objective",
+          "certainty": "explicit"
+        },
+        {
+          "match": "2026-12-18",
+          "kind": "deadline",
+          "certainty": "explicit"
+        }
+      ]
+    },
+    "clarification": {
+      "blocking": false
+    }
+  },
+  "steps": [
+    {
+      "do": "approve_execute"
+    },
+    {
+      "do": "complete_task",
+      "title": "Collect the supplier details"
+    },
+    {
+      "do": "snapshot",
+      "name": "before_replan"
+    },
+    {
+      "do": "replan",
+      "due": "+2d",
+      "save": "replan"
+    },
+    {
+      "do": "snapshot",
+      "name": "proposed"
+    },
+    {
+      "do": "approve_execute",
+      "action": "pending"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "value",
+      "snap": "saved:replan",
+      "path": "body.action.status",
+      "op": "eq",
+      "value": "pending_approval",
+      "id": "replan-is-only-a-proposal"
+    },
+    {
+      "check": "value",
+      "snap": "saved:replan",
+      "path": "body.action.actionType",
+      "op": "eq",
+      "value": "update_tasks"
+    },
+    {
+      "check": "value",
+      "snap": "saved:replan",
+      "path": "body.diff",
+      "op": "len_min",
+      "value": 1,
+      "id": "visible-diff"
+    },
+    {
+      "check": "value",
+      "snap": "saved:replan",
+      "path": "body.diff.*.changeType",
+      "op": "any_eq",
+      "value": "update"
+    },
+    {
+      "check": "value",
+      "snap": "saved:replan",
+      "path": "body.diff.*.changeType",
+      "op": "any_eq",
+      "value": "keep",
+      "id": "completed-task-shown-as-kept"
+    },
+    {
+      "check": "value",
+      "snap": "saved:replan",
+      "path": "body.blastRadiusTaskIds",
+      "op": "len_eq",
+      "value": 4,
+      "id": "blast-radius-excludes-completed-task"
+    },
+    {
+      "check": "unchanged",
+      "from": "before_replan",
+      "to": "proposed",
+      "id": "nothing-applied-before-approval"
+    },
+    {
+      "check": "completed_preserved",
+      "from": "before_replan",
+      "id": "completed-work-preserved"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "workflow.confirmedDueAt",
+      "op": "not_null"
+    },
+    {
+      "check": "tasks_due_bounded",
+      "id": "open-task-dates-follow-the-new-confirmed-date"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "actions.0.verification",
+      "op": "eq",
+      "value": "verified",
+      "id": "update-verified-by-readback"
+    },
+    {
+      "check": "activity",
+      "eventType": "replan_proposed",
+      "count": {
+        "eq": 1
+      }
+    }
+  ],
+  "variants": [
+    {
+      "name": "tasks_get_new_dates"
+    },
+    {
+      "name": "deadline_moves_no_task_needs_editing",
+      "override": {
+        "llm": {
+          "replan": {
+            "then": {
+              "goal": "Finish the supplier onboarding pack",
+              "tasks": [
+                {
+                  "draftId": "t1",
+                  "title": "Collect the supplier details",
+                  "description": "",
+                  "definitionOfDone": "Details are in one place",
+                  "dependsOnDraftIds": [],
+                  "requirementIds": [
+                    "r1"
+                  ],
+                  "estimatedMinutes": 20
+                },
+                {
+                  "draftId": "t2",
+                  "title": "Write the checklist",
+                  "description": "",
+                  "definitionOfDone": "Checklist written",
+                  "dependsOnDraftIds": [
+                    "t1"
+                  ],
+                  "requirementIds": [
+                    "r1"
+                  ],
+                  "estimatedMinutes": 30
+                },
+                {
+                  "draftId": "t3",
+                  "title": "Write the welcome email",
+                  "description": "",
+                  "definitionOfDone": "Email written",
+                  "dependsOnDraftIds": [
+                    "t1"
+                  ],
+                  "requirementIds": [
+                    "r1"
+                  ],
+                  "estimatedMinutes": 20
+                },
+                {
+                  "draftId": "t4",
+                  "title": "Build the access form",
+                  "description": "",
+                  "definitionOfDone": "Form built",
+                  "dependsOnDraftIds": [],
+                  "requirementIds": [
+                    "r1"
+                  ],
+                  "estimatedMinutes": 25
+                },
+                {
+                  "draftId": "t5",
+                  "title": "Send the pack to procurement",
+                  "description": "",
+                  "definitionOfDone": "Pack sent",
+                  "dependsOnDraftIds": [
+                    "t2",
+                    "t3",
+                    "t4"
+                  ],
+                  "requirementIds": [
+                    "r1"
+                  ],
+                  "estimatedMinutes": 5
+                }
+              ],
+              "unresolvedItems": [],
+              "changes": []
+            }
+          }
+        },
+        "steps": [
+          {
+            "do": "approve_execute"
+          },
+          {
+            "do": "replan",
+            "due": "+2d",
+            "save": "replan",
+            "expect": "any"
+          }
+        ],
+        "assertions": [
+          {
+            "check": "value",
+            "snap": "saved:replan",
+            "path": "status",
+            "op": "eq",
+            "value": 200,
+            "knownIssue": "backend: POST /replan with a new deadline returns 422 'There is nothing to change' when the model leaves every task untouched (e.g. tasks are undated), because actions.propose -> tools.validate_update_payload rejects an update_tasks payload that has no task updates/creates even though payload.workflowChanges.confirmedDueAt carries the user's new deadline.",
+            "id": "deadline-move-with-no-task-edits-is-still-proposable"
+          },
+          {
+            "check": "count",
+            "what": "tasks",
+            "count": {
+              "eq": 5
+            },
+            "id": "no-task-written-or-duplicated"
+          }
+        ]
+      }
+    }
+  ]
+}

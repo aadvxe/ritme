@@ -1,0 +1,212 @@
+{
+  "id": "s08_detailed_large_blocks",
+  "specNumber": 8,
+  "title": "Detailed text and larger blocks",
+  "description": "Larger blocks cap the task count (seven tasks from the model is rejected and repaired to the preference-aware fixture); estimates the user asked for stay.",
+  "synthetic": true,
+  "preferences": {
+    "taskGranularity": "larger_blocks",
+    "informationDensity": "detailed",
+    "planLayout": "full_list",
+    "timeEstimates": "show"
+  },
+  "capture": {
+    "contentText": "Please put together the Q4 partner proposal. Include the pricing section and the rollout timeline. It should go out on 2026-11-30."
+  },
+  "llm": {
+    "plan": {
+      "queue": [
+        {
+          "goal": "Send the Q4 partner proposal",
+          "tasks": [
+            {
+              "draftId": "t1",
+              "title": "Part 1 of the partner proposal",
+              "description": "Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. ",
+              "definitionOfDone": "Part 1 is complete",
+              "dependsOnDraftIds": [],
+              "requirementIds": [
+                "r1"
+              ],
+              "estimatedMinutes": 30
+            },
+            {
+              "draftId": "t2",
+              "title": "Part 2 of the partner proposal",
+              "description": "Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. ",
+              "definitionOfDone": "Part 2 is complete",
+              "dependsOnDraftIds": [
+                "t1"
+              ],
+              "requirementIds": [
+                "r1"
+              ],
+              "estimatedMinutes": 30
+            },
+            {
+              "draftId": "t3",
+              "title": "Part 3 of the partner proposal",
+              "description": "Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. ",
+              "definitionOfDone": "Part 3 is complete",
+              "dependsOnDraftIds": [
+                "t2"
+              ],
+              "requirementIds": [
+                "r1"
+              ],
+              "estimatedMinutes": 30
+            },
+            {
+              "draftId": "t4",
+              "title": "Part 4 of the partner proposal",
+              "description": "Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. ",
+              "definitionOfDone": "Part 4 is complete",
+              "dependsOnDraftIds": [
+                "t3"
+              ],
+              "requirementIds": [
+                "r1"
+              ],
+              "estimatedMinutes": 30
+            },
+            {
+              "draftId": "t5",
+              "title": "Part 5 of the partner proposal",
+              "description": "Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. ",
+              "definitionOfDone": "Part 5 is complete",
+              "dependsOnDraftIds": [
+                "t4"
+              ],
+              "requirementIds": [
+                "r1"
+              ],
+              "estimatedMinutes": 30
+            },
+            {
+              "draftId": "t6",
+              "title": "Part 6 of the partner proposal",
+              "description": "Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. ",
+              "definitionOfDone": "Part 6 is complete",
+              "dependsOnDraftIds": [
+                "t5"
+              ],
+              "requirementIds": [
+                "r1"
+              ],
+              "estimatedMinutes": 30
+            },
+            {
+              "draftId": "t7",
+              "title": "Part 7 of the partner proposal",
+              "description": "Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. Detailed description. ",
+              "definitionOfDone": "Part 7 is complete",
+              "dependsOnDraftIds": [
+                "t6"
+              ],
+              "requirementIds": [
+                "r1"
+              ],
+              "estimatedMinutes": 30
+            }
+          ],
+          "unresolvedItems": []
+        }
+      ]
+    }
+  },
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "Q4 partner proposal",
+          "kind": "objective",
+          "certainty": "explicit"
+        },
+        {
+          "match": "2026-11-30",
+          "kind": "deadline",
+          "certainty": "explicit"
+        }
+      ]
+    },
+    "clarification": {
+      "blocking": false
+    }
+  },
+  "steps": [
+    {
+      "do": "http",
+      "path": "/preferences",
+      "save": "prefs"
+    },
+    {
+      "do": "approve_execute"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "latestPlan.plan.tasks",
+      "op": "len_max",
+      "value": 5,
+      "id": "larger-blocks-caps-task-count"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "latestPlan.plan.tasks",
+      "op": "len_min",
+      "value": 1
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "latestPlan.plan.tasks.*.estimatedMinutes",
+      "op": "all_not_null",
+      "id": "requested-estimates-kept"
+    },
+    {
+      "check": "llm_calls",
+      "step": "plan",
+      "count": {
+        "eq": 2
+      },
+      "fakeOnly": true,
+      "id": "too-many-tasks-triggers-one-repair"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "tasks",
+      "op": "len_max",
+      "value": 5
+    },
+    {
+      "check": "value",
+      "snap": "saved:prefs",
+      "path": "body.taskGranularity",
+      "op": "eq",
+      "value": "larger_blocks"
+    },
+    {
+      "check": "value",
+      "snap": "saved:prefs",
+      "path": "body.informationDensity",
+      "op": "eq",
+      "value": "detailed"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "actions.0.verification",
+      "op": "eq",
+      "value": "verified"
+    },
+    {
+      "check": "text_absent",
+      "regex": "\\b(adhd|autis|diagnos|disorder|neurodiver)",
+      "id": "no-diagnostic-wording-stored"
+    }
+  ]
+}

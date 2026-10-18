@@ -1,0 +1,193 @@
+{
+  "id": "s12_write_ok_response_lost",
+  "specNumber": 12,
+  "title": "Tool write succeeds but the response is lost (verify before retry)",
+  "description": "The create-tasks tool committed all (or some) rows, then the request timed out. The retry verifies the stored rows first, completes only what is missing, and never duplicates.",
+  "synthetic": true,
+  "capture": {
+    "contentText": "Please send the venue shortlist to the events team. It should include price, capacity and location. Needed by 2026-12-01."
+  },
+  "llm": {
+    "plan": {
+      "then": {
+        "goal": "Send the venue shortlist",
+        "tasks": [
+          {
+            "draftId": "t1",
+            "title": "Collect price, capacity and location for each venue",
+            "description": "",
+            "definitionOfDone": "A table has all three columns",
+            "dependsOnDraftIds": [],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 30
+          },
+          {
+            "draftId": "t2",
+            "title": "Rank the venues",
+            "description": "",
+            "definitionOfDone": "The venues are ranked",
+            "dependsOnDraftIds": [
+              "t1"
+            ],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 15
+          },
+          {
+            "draftId": "t3",
+            "title": "Send the shortlist to the events team",
+            "description": "",
+            "definitionOfDone": "The shortlist is sent",
+            "dependsOnDraftIds": [
+              "t2"
+            ],
+            "requirementIds": [
+              "r1"
+            ],
+            "estimatedMinutes": 5
+          }
+        ],
+        "unresolvedItems": []
+      }
+    }
+  },
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "venue shortlist",
+          "kind": "objective",
+          "certainty": "explicit"
+        },
+        {
+          "match": "2026-12-01",
+          "kind": "deadline",
+          "certainty": "explicit"
+        }
+      ]
+    },
+    "clarification": {
+      "blocking": false
+    }
+  },
+  "params": {
+    "written": "all",
+    "stuckTasks": 3
+  },
+  "variants": [
+    {
+      "name": "full_write_lost_ack",
+      "override": {
+        "params": {
+          "written": "all",
+          "stuckTasks": 3
+        }
+      }
+    },
+    {
+      "name": "partial_write_lost_ack",
+      "override": {
+        "params": {
+          "written": 1,
+          "stuckTasks": 1
+        }
+      }
+    }
+  ],
+  "steps": [
+    {
+      "do": "approve"
+    },
+    {
+      "do": "inject",
+      "kind": "write_ok_response_lost",
+      "written": "$param:written",
+      "action": "approved"
+    },
+    {
+      "do": "snapshot",
+      "name": "stuck"
+    },
+    {
+      "do": "execute",
+      "action": "executing",
+      "save": "exec"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "value",
+      "snap": "stuck",
+      "path": "actions.0.status",
+      "op": "eq",
+      "value": "executing",
+      "id": "interrupted-action-not-shown-as-success"
+    },
+    {
+      "check": "value",
+      "snap": "stuck",
+      "path": "actions.0.verification",
+      "op": "eq",
+      "value": "not_run"
+    },
+    {
+      "check": "value",
+      "snap": "stuck",
+      "path": "tasks",
+      "op": "len_eq",
+      "value": "$param:stuckTasks"
+    },
+    {
+      "check": "value",
+      "snap": "saved:exec",
+      "path": "body.status",
+      "op": "eq",
+      "value": "succeeded",
+      "id": "retry-ends-succeeded"
+    },
+    {
+      "check": "value",
+      "snap": "saved:exec",
+      "path": "body.verification",
+      "op": "eq",
+      "value": "verified",
+      "id": "retry-verified-by-fresh-read"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "tasks",
+      "op": "len_eq",
+      "value": 3,
+      "id": "exactly-the-approved-three-tasks"
+    },
+    {
+      "check": "count",
+      "what": "tasks",
+      "count": {
+        "eq": 3
+      }
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "actions.0.resultIds",
+      "op": "len_eq",
+      "value": 3
+    },
+    {
+      "check": "task_graph",
+      "minEdges": 2
+    },
+    {
+      "check": "activity",
+      "eventType": "action_verified",
+      "count": {
+        "eq": 1
+      }
+    }
+  ]
+}

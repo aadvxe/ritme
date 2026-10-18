@@ -1,0 +1,226 @@
+{
+  "id": "s17_extension_unauthenticated",
+  "specNumber": 17,
+  "title": "Extension offline / unauthenticated (API contract)",
+  "description": "No, malformed, invalid, expired or revoked credentials get 401 and create nothing; a scoped extension token can only save captures. Client-side offline UI is not covered here.",
+  "synthetic": true,
+  "liveSkip": "no model involved; the regression run already covers it",
+  "annotations": {},
+  "steps": [
+    {
+      "do": "http",
+      "method": "POST",
+      "path": "/captures",
+      "auth": "none",
+      "body": {
+        "contentText": "Please book the offsite venue for the team.",
+        "sourceType": "browser_selection",
+        "idempotencyKey": "eval-s17-ext-key-0001",
+        "sourceUrl": "https://mail.example.com/t/9"
+      },
+      "save": "no_token"
+    },
+    {
+      "do": "http",
+      "method": "POST",
+      "path": "/captures",
+      "auth": "invalid",
+      "body": {
+        "contentText": "Please book the offsite venue for the team.",
+        "sourceType": "browser_selection",
+        "idempotencyKey": "eval-s17-ext-key-0001",
+        "sourceUrl": "https://mail.example.com/t/9"
+      },
+      "save": "bad_token"
+    },
+    {
+      "do": "http",
+      "method": "POST",
+      "path": "/captures",
+      "auth": "malformed",
+      "body": {
+        "contentText": "Please book the offsite venue for the team.",
+        "sourceType": "browser_selection",
+        "idempotencyKey": "eval-s17-ext-key-0001",
+        "sourceUrl": "https://mail.example.com/t/9"
+      },
+      "save": "malformed"
+    },
+    {
+      "do": "extension_connect"
+    },
+    {
+      "do": "http",
+      "method": "POST",
+      "path": "/captures",
+      "auth": "ext_expired",
+      "body": {
+        "contentText": "Please book the offsite venue for the team.",
+        "sourceType": "browser_selection",
+        "idempotencyKey": "eval-s17-ext-key-0001",
+        "sourceUrl": "https://mail.example.com/t/9"
+      },
+      "save": "expired"
+    },
+    {
+      "do": "http",
+      "method": "POST",
+      "path": "/captures",
+      "auth": "ext",
+      "body": {
+        "contentText": "Please book the offsite venue for the team.",
+        "sourceType": "browser_selection",
+        "idempotencyKey": "eval-s17-ext-key-0001",
+        "sourceUrl": "https://mail.example.com/t/9"
+      },
+      "save": "ok"
+    },
+    {
+      "do": "http",
+      "method": "POST",
+      "path": "/captures",
+      "auth": "ext",
+      "body": {
+        "contentText": "Please book the offsite venue for the team.",
+        "sourceType": "browser_selection",
+        "idempotencyKey": "eval-s17-ext-key-0001",
+        "sourceUrl": "https://mail.example.com/t/9"
+      },
+      "save": "replay"
+    },
+    {
+      "do": "http",
+      "method": "GET",
+      "path": "/workflows",
+      "auth": "ext",
+      "save": "read_attempt"
+    },
+    {
+      "do": "extension_revoke"
+    },
+    {
+      "do": "http",
+      "method": "POST",
+      "path": "/captures",
+      "auth": "ext",
+      "body": {
+        "contentText": "Please book the offsite venue for the team.",
+        "sourceType": "browser_selection",
+        "idempotencyKey": "eval-s17-ext-key-0002",
+        "sourceUrl": "https://mail.example.com/t/9"
+      },
+      "save": "revoked"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "value",
+      "snap": "saved:no_token",
+      "path": "status",
+      "op": "eq",
+      "value": 401,
+      "id": "no-token-401"
+    },
+    {
+      "check": "value",
+      "snap": "saved:no_token",
+      "path": "body.error.code",
+      "op": "eq",
+      "value": "unauthenticated"
+    },
+    {
+      "check": "value",
+      "snap": "saved:bad_token",
+      "path": "status",
+      "op": "eq",
+      "value": 401,
+      "id": "invalid-token-401"
+    },
+    {
+      "check": "value",
+      "snap": "saved:malformed",
+      "path": "status",
+      "op": "eq",
+      "value": 401,
+      "id": "malformed-header-401"
+    },
+    {
+      "check": "value",
+      "snap": "saved:expired",
+      "path": "status",
+      "op": "eq",
+      "value": 401,
+      "id": "expired-extension-token-401"
+    },
+    {
+      "check": "value",
+      "snap": "saved:ok",
+      "path": "status",
+      "op": "eq",
+      "value": 201,
+      "id": "valid-extension-token-saves-capture"
+    },
+    {
+      "check": "value",
+      "snap": "saved:ok",
+      "path": "body.workflow.status",
+      "op": "eq",
+      "value": "captured",
+      "id": "success-does-not-claim-analysis-finished"
+    },
+    {
+      "check": "value",
+      "snap": "saved:replay",
+      "path": "status",
+      "op": "eq",
+      "value": 200
+    },
+    {
+      "check": "value",
+      "snap": "saved:replay",
+      "path": "body.created",
+      "op": "eq",
+      "value": false,
+      "id": "replay-is-idempotent"
+    },
+    {
+      "check": "value",
+      "snap": "saved:read_attempt",
+      "path": "status",
+      "op": "eq",
+      "value": 403,
+      "id": "extension-token-cannot-read-workflows"
+    },
+    {
+      "check": "value",
+      "snap": "saved:revoked",
+      "path": "status",
+      "op": "eq",
+      "value": 401,
+      "id": "revoked-device-401"
+    },
+    {
+      "check": "count",
+      "what": "captures",
+      "count": {
+        "eq": 1
+      },
+      "id": "only-the-one-valid-capture-exists"
+    },
+    {
+      "check": "count",
+      "what": "workflows",
+      "count": {
+        "eq": 1
+      }
+    },
+    {
+      "check": "count",
+      "what": "agent_runs",
+      "count": {
+        "eq": 1
+      },
+      "id": "only-the-valid-capture-queued-an-analysis"
+    }
+  ]
+}

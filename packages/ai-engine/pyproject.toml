@@ -1,0 +1,17 @@
+[project]
+name = "ritme-ai-engine"
+version = "0.1.0"
+description = "Ritme AI engine: Vertex AI (Gemini) adapter, structured steps, prompts and guards. No DB, no HTTP framework."
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "ritme-contracts",
+  "pydantic>=2.9",
+  "google-genai>=1.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ritme_ai"]

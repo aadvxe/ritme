@@ -1,0 +1,226 @@
+{
+  "id": "s11_llm_failure_timeout",
+  "specNumber": 11,
+  "title": "LLM schema failure and timeout",
+  "description": "Invalid JSON twice, a timeout, then a plan failure: each ends as a recoverable failed state with the capture intact and nothing presented as success; retries resume.",
+  "synthetic": true,
+  "liveSkip": "needs scripted model failures; cannot be provoked on demand against a real model",
+  "capture": {
+    "contentText": "Please compile the monthly expense summary for finance. It is due 2026-11-15."
+  },
+  "llm": {
+    "extract": {
+      "queue": [
+        {
+          "$raw": "{ this is not json"
+        },
+        {
+          "$raw": "{ still not json"
+        },
+        {
+          "$fail": "timeout"
+        }
+      ]
+    },
+    "plan": {
+      "queue": [
+        {
+          "$raw": "nope"
+        },
+        {
+          "$raw": "still nope"
+        }
+      ]
+    }
+  },
+  "annotations": {
+    "extraction": {
+      "expected": [
+        {
+          "match": "monthly expense summary",
+          "kind": "objective",
+          "certainty": "explicit"
+        },
+        {
+          "match": "2026-11-15",
+          "kind": "deadline",
+          "certainty": "explicit"
+        }
+      ],
+      "snapshot": "final"
+    },
+    "clarification": {
+      "blocking": false,
+      "snapshot": "final"
+    }
+  },
+  "drain": true,
+  "steps": [
+    {
+      "do": "snapshot",
+      "name": "after_invalid_json"
+    },
+    {
+      "do": "analyze"
+    },
+    {
+      "do": "snapshot",
+      "name": "after_timeout"
+    },
+    {
+      "do": "analyze"
+    },
+    {
+      "do": "snapshot",
+      "name": "after_plan_failure"
+    },
+    {
+      "do": "analyze"
+    }
+  ],
+  "assertions": [
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "failed",
+      "id": "invalid-json-after-repair-fails-the-run-recoverably"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "capture.contentText",
+      "op": "contains",
+      "value": "monthly expense summary",
+      "id": "capture-text-never-lost"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "requirements",
+      "op": "len_eq",
+      "value": 0,
+      "id": "nothing-fabricated-after-invalid-output"
+    },
+    {
+      "check": "value",
+      "snap": "initial",
+      "path": "workflow.nextAction",
+      "op": "regex",
+      "value": "try again",
+      "id": "user-told-they-can-retry"
+    },
+    {
+      "check": "value",
+      "snap": "after_timeout",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "failed"
+    },
+    {
+      "check": "value",
+      "snap": "after_timeout",
+      "path": "requirements",
+      "op": "len_eq",
+      "value": 0
+    },
+    {
+      "check": "value",
+      "snap": "after_plan_failure",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "failed",
+      "id": "plan-schema-failure-recoverable"
+    },
+    {
+      "check": "value",
+      "snap": "after_plan_failure",
+      "path": "requirements",
+      "op": "len_min",
+      "value": 1,
+      "id": "extraction-kept-when-plan-fails"
+    },
+    {
+      "check": "value",
+      "snap": "after_plan_failure",
+      "path": "latestPlan",
+      "op": "is_null"
+    },
+    {
+      "check": "value",
+      "snap": "after_plan_failure",
+      "path": "actions",
+      "op": "len_eq",
+      "value": 0,
+      "id": "no-action-proposed-without-a-valid-plan"
+    },
+    {
+      "check": "value",
+      "snap": "final",
+      "path": "workflow.status",
+      "op": "eq",
+      "value": "ready_for_approval",
+      "id": "fourth-attempt-succeeds"
+    },
+    {
+      "check": "count",
+      "what": "agent_runs",
+      "count": {
+        "eq": 3
+      },
+      "where": {
+        "status": "failed"
+      },
+      "fakeOnly": true
+    },
+    {
+      "check": "count",
+      "what": "agent_runs",
+      "count": {
+        "eq": 2
+      },
+      "id": "invalid-output-classified",
+      "where": {
+        "error_code": "invalid_output"
+      },
+      "fakeOnly": true
+    },
+    {
+      "check": "count",
+      "what": "agent_runs",
+      "count": {
+        "eq": 1
+      },
+      "id": "timeout-classified",
+      "where": {
+        "error_code": "timeout"
+      },
+      "fakeOnly": true
+    },
+    {
+      "check": "activity",
+      "eventType": "run_failed",
+      "count": {
+        "eq": 3
+      },
+      "fakeOnly": true
+    },
+    {
+      "check": "llm_calls",
+      "step": "extract",
+      "count": {
+        "eq": 5
+      },
+      "fakeOnly": true
+    },
+    {
+      "check": "llm_calls",
+      "step": "plan",
+      "count": {
+        "eq": 3
+      },
+      "fakeOnly": true
+    }
+  ]
+}
