@@ -1,0 +1,20 @@
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.env
+.env.*
+!.env.example
+*.log
+.turbo/
+coverage/
+playwright-report/
+test-results/
+# secrets — never commit
+*.pem
+*service-account*.json
+*-key.json
