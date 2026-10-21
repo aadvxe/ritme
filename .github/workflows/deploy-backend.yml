@@ -1,0 +1,131 @@
+name: Deploy Backend to Google Cloud Run
+
+on:
+  push:
+    branches:
+      - master
+      - main
+    paths:
+      - 'apps/backend/**'
+      - 'packages/**'
+      - 'infra/**'
+      - '.github/workflows/deploy-backend.yml'
+      - 'pyproject.toml'
+      - 'uv.lock'
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-cloudrun-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  PROJECT_ID: orchestration-489516
+  REGION: asia-southeast2
+  VERTEX_LOCATION: us-central1
+  REPO_NAME: ritme
+  SQL_INSTANCE: ritme-db
+  ALLOWED_ORIGINS: https://ritme-sigma.vercel.app
+
+jobs:
+  test:
+    name: Run Unit Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Run Backend & AI Engine Tests
+        run: |
+          uv sync --package ritme-backend --package ritme-ai
+          uv run pytest packages/ai-engine/tests
+
+  deploy:
+    name: Build & Deploy to Cloud Run
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        id: auth
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Build Container via Cloud Build
+        run: |
+          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/ritme-backend:${{ github.sha }}"
+          LATEST_IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/ritme-backend:latest"
+          
+          echo "Building image: $IMAGE"
+          gcloud builds submit \
+            --config infra/cloudbuild.yaml \
+            --substitutions "_IMAGE=$IMAGE,_DOCKERFILE=infra/Dockerfile.backend" \
+            --project ${{ env.PROJECT_ID }} .
+            
+          # Tag as latest in Artifact Registry
+          gcloud artifacts docker images add-tag "$IMAGE" "$LATEST_IMAGE" --quiet || true
+
+      - name: Run Database Migrations (Cloud Run Job)
+        run: |
+          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/ritme-backend:${{ github.sha }}"
+          INSTANCE_CONN="${{ env.PROJECT_ID }}:${{ env.REGION }}:${{ env.SQL_INSTANCE }}"
+          COMMON_ENV="ENVIRONMENT=production,GCP_PROJECT_ID=${{ env.PROJECT_ID }},GCP_REGION=${{ env.REGION }},VERTEX_LOCATION=${{ env.VERTEX_LOCATION }},LLM_PROVIDER=vertex,INSTANCE_CONNECTION_NAME=$INSTANCE_CONN,DB_NAME=ritme,DB_USER=ritme,FIREBASE_PROJECT_ID=${{ env.PROJECT_ID }}"
+          SECRETS="DB_PASSWORD=ritme-db-password:latest,EXTENSION_TOKEN_SECRET=ritme-extension-token-secret:latest"
+
+          echo "Updating and running migration job: ritme-migrate"
+          gcloud run jobs deploy ritme-migrate \
+            --image "$IMAGE" \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }} \
+            --service-account "ritme-api@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
+            --set-cloudsql-instances "$INSTANCE_CONN" \
+            --set-env-vars "$COMMON_ENV" \
+            --set-secrets "$SECRETS" \
+            --command alembic --args upgrade,head
+
+          gcloud run jobs execute ritme-migrate --region ${{ env.REGION }} --project ${{ env.PROJECT_ID }} --wait
+
+      - name: Deploy API Service to Cloud Run
+        run: |
+          IMAGE="${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/${{ env.REPO_NAME }}/ritme-backend:${{ github.sha }}"
+          INSTANCE_CONN="${{ env.PROJECT_ID }}:${{ env.REGION }}:${{ env.SQL_INSTANCE }}"
+          COMMON_ENV="ENVIRONMENT=production,GCP_PROJECT_ID=${{ env.PROJECT_ID }},GCP_REGION=${{ env.REGION }},VERTEX_LOCATION=${{ env.VERTEX_LOCATION }},LLM_PROVIDER=vertex,INSTANCE_CONNECTION_NAME=$INSTANCE_CONN,DB_NAME=ritme,DB_USER=ritme,FIREBASE_PROJECT_ID=${{ env.PROJECT_ID }}"
+          SECRETS="DB_PASSWORD=ritme-db-password:latest,EXTENSION_TOKEN_SECRET=ritme-extension-token-secret:latest"
+
+          echo "Deploying Cloud Run service: ritme-api"
+          gcloud run deploy ritme-api \
+            --image "$IMAGE" \
+            --region ${{ env.REGION }} \
+            --project ${{ env.PROJECT_ID }} \
+            --allow-unauthenticated \
+            --service-account "ritme-api@${{ env.PROJECT_ID }}.iam.gserviceaccount.com" \
+            --add-cloudsql-instances "$INSTANCE_CONN" \
+            --set-env-vars "$COMMON_ENV,ROLE=api,RUN_QUEUE=local,ALLOWED_ORIGINS=${{ env.ALLOWED_ORIGINS }},PUBLIC_WEB_URL=${{ env.ALLOWED_ORIGINS }}" \
+            --set-secrets "$SECRETS" \
+            --min-instances 0
+
+      - name: Output Service URL & Deployment Summary
+        run: |
+          API_URL=$(gcloud run services describe ritme-api --region ${{ env.REGION }} --project ${{ env.PROJECT_ID }} --format 'value(status.url)')
+          echo "===================================================="
+          echo "Deployment complete! Live Cloud Run API URL: $API_URL"
+          echo "===================================================="
+          echo "API_URL=$API_URL" >> $GITHUB_STEP_SUMMARY

@@ -128,7 +128,7 @@ echo "--> [5/8] Building backend container image via Cloud Build..."
 gcloud artifacts repositories describe "$REPO" --location "$REGION" --project "$GCP_PROJECT_ID" >/dev/null 2>&1 \
   || gcloud artifacts repositories create "$REPO" --repository-format=docker --location "$REGION" --project "$GCP_PROJECT_ID"
 
-gcloud builds submit --tag "$IMAGE" \
+gcloud builds submit \
   --config infra/cloudbuild.yaml \
   --substitutions "_IMAGE=$IMAGE,_DOCKERFILE=infra/Dockerfile.backend" \
   --project "$GCP_PROJECT_ID" .

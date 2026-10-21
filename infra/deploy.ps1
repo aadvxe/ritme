@@ -7,7 +7,7 @@
   and deploys the FastAPI backend to Cloud Run with Cloud SQL integration and Vercel CORS support.
 .EXAMPLE
   .\infra\deploy.ps1
-  .\infra\deploy.ps1 -ProjectId "my-project-123" -AllowedOrigins "https://my-app.vercel.app"
+  .\infra\deploy.ps1 -ProjectId "orchestration-489516" -AllowedOrigins "https://ritme-sigma.vercel.app"
 #>
 
 [CmdletBinding()]
@@ -31,7 +31,11 @@ param(
   [switch]$DeployWorker
 )
 
-$ErrorActionPreference = "Stop"
+# Do not abort script on harmless external stderr outputs (e.g. gcloud status/progress logs)
+$ErrorActionPreference = "Continue"
+if (Test-Path variable:global:PSNativeCommandUseErrorActionPreference) {
+  $global:PSNativeCommandUseErrorActionPreference = $false
+}
 
 # Resolve repository root
 $RepoRoot = if (Test-Path (Join-Path $PSScriptRoot "..\package.json")) {
@@ -94,6 +98,16 @@ if (-not (Get-Command gcloud -ErrorAction SilentlyContinue)) {
   exit 1
 }
 
+# Auto-resolve numeric Project ID to alphanumeric GCP Project ID string if needed
+if ($ProjectId -match "^\d+$") {
+  Write-Host "--> Detected numeric project number ($ProjectId). Resolving Project ID..." -ForegroundColor DarkGray
+  $resolvedId = (& gcloud projects describe $ProjectId --format="value(projectId)" 2>$null)
+  if ($resolvedId) {
+    $ProjectId = $resolvedId.Trim()
+    Write-Host "--> Using GCP Project ID: $ProjectId" -ForegroundColor Cyan
+  }
+}
+
 # Validation checks
 if (-not $ProjectId -or $ProjectId -eq "your-gcp-project-id") {
   Write-Host "`n[ERROR] Missing or placeholder GCP Project ID!" -ForegroundColor Red
@@ -107,12 +121,15 @@ if (-not $AllowedOrigins -or $AllowedOrigins -eq "https://your-frontend.vercel.a
   exit 1
 }
 
+# Normalize origins (strip trailing slashes for clean CORS comparison)
+$AllowedOrigins = ($AllowedOrigins.Split(",") | ForEach-Object { $_.Trim().TrimEnd("/") }) -join ","
+$PublicWebUrl = ($AllowedOrigins.Split(",")[0]).Trim()
+
 $VertexLocation = if ($env:VERTEX_LOCATION) { $env:VERTEX_LOCATION } else { "us-central1" }
 $Repo = "ritme"
 $Image = "$Region-docker.pkg.dev/$ProjectId/$Repo/ritme-backend:latest"
 $InstanceConnectionName = "$ProjectId`:$Region`:$SqlInstance"
 $Queue = "ritme-runs"
-$PublicWebUrl = $AllowedOrigins
 
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host "Deploying Ritme Backend to Cloud Run & Cloud SQL" -ForegroundColor Cyan
@@ -123,7 +140,7 @@ Write-Host "Origin:    $AllowedOrigins"
 Write-Host "========================================================" -ForegroundColor Cyan
 
 Write-Host "--> [1/8] Enabling required GCP APIs..." -ForegroundColor Yellow
-gcloud services enable `
+& gcloud services enable `
   run.googleapis.com `
   sqladmin.googleapis.com `
   artifactregistry.googleapis.com `
@@ -135,10 +152,10 @@ gcloud services enable `
   --project $ProjectId
 
 Write-Host "--> [2/8] Provisioning Cloud SQL PostgreSQL ($SqlInstance)..." -ForegroundColor Yellow
-$instanceCheck = gcloud sql instances describe $SqlInstance --project $ProjectId 2>$null
-if (-not $instanceCheck) {
+$existingInstances = @(& gcloud sql instances list --project $ProjectId --format="value(name)" 2>$null)
+if ($existingInstances -notcontains $SqlInstance) {
   Write-Host "Instance $SqlInstance not found. Creating PostgreSQL 16 instance (takes 3-5 mins)..." -ForegroundColor Cyan
-  gcloud sql instances create $SqlInstance `
+  & gcloud sql instances create $SqlInstance `
     --project $ProjectId `
     --database-version=POSTGRES_16 `
     --tier=$SqlTier `
@@ -151,53 +168,56 @@ if (-not $instanceCheck) {
 }
 
 # Ensure database 'ritme' exists
-$dbCheck = gcloud sql databases describe ritme --instance=$SqlInstance --project $ProjectId 2>$null
-if (-not $dbCheck) {
+$existingDbs = @(& gcloud sql databases list --instance=$SqlInstance --project $ProjectId --format="value(name)" 2>$null)
+if ($existingDbs -notcontains "ritme") {
   Write-Host "Creating database 'ritme'..."
-  gcloud sql databases create ritme --instance=$SqlInstance --project $ProjectId
+  & gcloud sql databases create ritme --instance=$SqlInstance --project $ProjectId
+} else {
+  Write-Host "Database 'ritme' exists."
 }
 
 Write-Host "--> [3/8] Managing secrets in Secret Manager..." -ForegroundColor Yellow
+$existingSecrets = @(& gcloud secrets list --project $ProjectId --format="value(name)" 2>$null)
+
 # Database password secret
-$pwSecretCheck = gcloud secrets describe ritme-db-password --project $ProjectId 2>$null
-if (-not $pwSecretCheck) {
+if ($existingSecrets -notcontains "ritme-db-password") {
   Write-Host "Creating secret 'ritme-db-password'..."
-  gcloud secrets create ritme-db-password --replication-policy=automatic --project $ProjectId
+  & gcloud secrets create ritme-db-password --replication-policy=automatic --project $ProjectId
   $dbPassword = [System.Guid]::NewGuid().ToString("N") + [System.Guid]::NewGuid().ToString("N")
-  $dbPassword | gcloud secrets versions add ritme-db-password --data-file=- --project $ProjectId
+  $dbPassword | & gcloud secrets versions add ritme-db-password --data-file=- --project $ProjectId
   Write-Host "Creating Cloud SQL user 'ritme'..."
-  gcloud sql users create ritme --instance=$SqlInstance --password=$dbPassword --project $ProjectId
+  & gcloud sql users create ritme --instance=$SqlInstance --password=$dbPassword --project $ProjectId
 } else {
   Write-Host "Secret 'ritme-db-password' exists."
-  $existingUsers = gcloud sql users list --instance=$SqlInstance --project $ProjectId --format="value(name)"
-  if ($existingUsers -notmatch "(?m)^ritme$") {
+  $existingUsers = @(& gcloud sql users list --instance=$SqlInstance --project $ProjectId --format="value(name)" 2>$null)
+  if ($existingUsers -notcontains "ritme") {
     Write-Host "Creating Cloud SQL user 'ritme' from existing secret..."
-    $existingPw = gcloud secrets versions access latest --secret=ritme-db-password --project=$ProjectId
-    gcloud sql users create ritme --instance=$SqlInstance --password=$existingPw --project $ProjectId
+    $existingPw = (& gcloud secrets versions access latest --secret=ritme-db-password --project=$ProjectId).Trim()
+    & gcloud sql users create ritme --instance=$SqlInstance --password=$existingPw --project $ProjectId
   }
 }
 
 # Extension token signing secret
-$extSecretCheck = gcloud secrets describe ritme-extension-token-secret --project $ProjectId 2>$null
-if (-not $extSecretCheck) {
+if ($existingSecrets -notcontains "ritme-extension-token-secret") {
   Write-Host "Creating secret 'ritme-extension-token-secret'..."
-  gcloud secrets create ritme-extension-token-secret --replication-policy=automatic --project $ProjectId
+  & gcloud secrets create ritme-extension-token-secret --replication-policy=automatic --project $ProjectId
   $extSecret = [System.Guid]::NewGuid().ToString("N") + [System.Guid]::NewGuid().ToString("N")
-  $extSecret | gcloud secrets versions add ritme-extension-token-secret --data-file=- --project $ProjectId
+  $extSecret | & gcloud secrets versions add ritme-extension-token-secret --data-file=- --project $ProjectId
 } else {
   Write-Host "Secret 'ritme-extension-token-secret' exists."
 }
 
 Write-Host "--> [4/8] Configuring IAM and Service Accounts..." -ForegroundColor Yellow
+$existingSas = @(& gcloud iam service-accounts list --project $ProjectId --format="value(email)" 2>$null)
 foreach ($sa in @("ritme-api", "ritme-worker", "ritme-tasks-invoker")) {
-  $saCheck = gcloud iam service-accounts describe "$sa@$ProjectId.iam.gserviceaccount.com" --project $ProjectId 2>$null
-  if (-not $saCheck) {
-    gcloud iam service-accounts create $sa --project $ProjectId --display-name="Ritme $sa"
+  $saEmail = "$sa@$ProjectId.iam.gserviceaccount.com"
+  if ($existingSas -notcontains $saEmail) {
+    & gcloud iam service-accounts create $sa --project $ProjectId --display-name="Ritme $sa"
   }
 }
 
 function Bind-Role($saName, $role) {
-  gcloud projects add-iam-policy-binding $ProjectId `
+  & gcloud projects add-iam-policy-binding $ProjectId `
     --member "serviceAccount:$saName@$ProjectId.iam.gserviceaccount.com" `
     --role $role --condition=None *> $null
 }
@@ -209,28 +229,30 @@ Bind-Role "ritme-worker" "roles/cloudsql.client"
 Bind-Role "ritme-worker" "roles/aiplatform.user"
 
 # Grant ritme-api permission to act as ritme-tasks-invoker
-gcloud iam service-accounts add-iam-policy-binding "ritme-tasks-invoker@$ProjectId.iam.gserviceaccount.com" `
+& gcloud iam service-accounts add-iam-policy-binding "ritme-tasks-invoker@$ProjectId.iam.gserviceaccount.com" `
   --member "serviceAccount:ritme-api@$ProjectId.iam.gserviceaccount.com" `
   --role roles/iam.serviceAccountUser --project $ProjectId *> $null
 
 # Secret Manager access
 foreach ($s in @("ritme-db-password", "ritme-extension-token-secret")) {
   foreach ($sa in @("ritme-api", "ritme-worker")) {
-    gcloud secrets add-iam-policy-binding $s `
+    & gcloud secrets add-iam-policy-binding $s `
       --member "serviceAccount:$sa@$ProjectId.iam.gserviceaccount.com" `
       --role roles/secretmanager.secretAccessor --project $ProjectId *> $null
   }
 }
 
 Write-Host "--> [5/8] Building backend container image via Cloud Build..." -ForegroundColor Yellow
-$arCheck = gcloud artifacts repositories describe $Repo --location $Region --project $ProjectId 2>$null
-if (-not $arCheck) {
-  gcloud artifacts repositories create $Repo --repository-format=docker --location $Region --project $ProjectId
+$existingRepos = @(& gcloud artifacts repositories list --location $Region --project $ProjectId --format="value(name)" 2>$null)
+$repoMatches = $existingRepos | Where-Object { $_ -match "(?:/repositories/|^)$Repo$" }
+if (-not $repoMatches) {
+  Write-Host "Creating Artifact Registry repository '$Repo' in $Region..."
+  & gcloud artifacts repositories create $Repo --repository-format=docker --location $Region --project $ProjectId
 }
 
 Push-Location $RepoRoot
 try {
-  gcloud builds submit --tag $Image `
+  & gcloud builds submit `
     --config "infra/cloudbuild.yaml" `
     --substitutions "_IMAGE=$Image,_DOCKERFILE=infra/Dockerfile.backend" `
     --project $ProjectId .
@@ -242,7 +264,7 @@ $CommonEnv = "ENVIRONMENT=production,GCP_PROJECT_ID=$ProjectId,GCP_REGION=$Regio
 $Secrets = "DB_PASSWORD=ritme-db-password:latest,EXTENSION_TOKEN_SECRET=ritme-extension-token-secret:latest"
 
 Write-Host "--> [6/8] Running database migrations (Cloud Run Job: ritme-migrate)..." -ForegroundColor Yellow
-gcloud run jobs deploy ritme-migrate `
+& gcloud run jobs deploy ritme-migrate `
   --image $Image `
   --region $Region `
   --project $ProjectId `
@@ -252,7 +274,7 @@ gcloud run jobs deploy ritme-migrate `
   --set-secrets $Secrets `
   --command alembic --args upgrade,head
 
-gcloud run jobs execute ritme-migrate --region $Region --project $ProjectId --wait
+& gcloud run jobs execute ritme-migrate --region $Region --project $ProjectId --wait
 
 Write-Host "--> [7/8] Deploying Cloud Run API service..." -ForegroundColor Yellow
 $workerUrl = ""
@@ -260,7 +282,7 @@ $queueMode = "local"
 
 if ($DeployWorker) {
   Write-Host "Deploying private worker service..."
-  gcloud run deploy ritme-worker `
+  & gcloud run deploy ritme-worker `
     --image $Image `
     --region $Region `
     --project $ProjectId `
@@ -272,29 +294,32 @@ if ($DeployWorker) {
     --min-instances 0 `
     --timeout 300
 
-  $workerUrl = (gcloud run services describe ritme-worker --region $Region --project $ProjectId --format "value(status.url)").Trim()
-  gcloud run services add-iam-policy-binding ritme-worker --region $Region --project $ProjectId `
+  $workerUrl = (& gcloud run services describe ritme-worker --region $Region --project $ProjectId --format "value(status.url)").Trim()
+  & gcloud run services add-iam-policy-binding ritme-worker --region $Region --project $ProjectId `
     --member "serviceAccount:ritme-tasks-invoker@$ProjectId.iam.gserviceaccount.com" --role roles/run.invoker
 
-  $qCheck = gcloud tasks queues describe $Queue --location $Region --project $ProjectId 2>$null
-  if (-not $qCheck) {
-    gcloud tasks queues create $Queue --location $Region --project $ProjectId
+  $existingQueues = @(& gcloud tasks queues list --location $Region --project $ProjectId --format="value(name)" 2>$null)
+  $queueMatches = $existingQueues | Where-Object { $_ -match "(?:/queues/|^)$Queue$" }
+  if (-not $queueMatches) {
+    & gcloud tasks queues create $Queue --location $Region --project $ProjectId
   }
   $queueMode = "cloudtasks"
 }
 
-gcloud run deploy ritme-api `
+$extensionId = if ($env:EXTENSION_ID) { $env:EXTENSION_ID } else { "" }
+
+& gcloud run deploy ritme-api `
   --image $Image `
   --region $Region `
   --project $ProjectId `
   --allow-unauthenticated `
   --service-account "ritme-api@$ProjectId.iam.gserviceaccount.com" `
   --add-cloudsql-instances $InstanceConnectionName `
-  --set-env-vars "$CommonEnv,ROLE=api,RUN_QUEUE=$queueMode,CLOUD_TASKS_QUEUE=$Queue,WORKER_URL=$workerUrl,ALLOWED_ORIGINS=$AllowedOrigins,PUBLIC_WEB_URL=$PublicWebUrl" `
+  --set-env-vars "$CommonEnv,ROLE=api,RUN_QUEUE=$queueMode,CLOUD_TASKS_QUEUE=$Queue,WORKER_URL=$workerUrl,ALLOWED_ORIGINS=$AllowedOrigins,PUBLIC_WEB_URL=$PublicWebUrl,EXTENSION_ID=$extensionId" `
   --set-secrets $Secrets `
   --min-instances 0
 
-$ApiUrl = (gcloud run services describe ritme-api --region $Region --project $ProjectId --format "value(status.url)").Trim()
+$ApiUrl = (& gcloud run services describe ritme-api --region $Region --project $ProjectId --format "value(status.url)").Trim()
 
 Write-Host "========================================================" -ForegroundColor Green
 Write-Host "--> [8/8] Deployment successful!" -ForegroundColor Green
