@@ -78,6 +78,7 @@ jobs:
           gcloud builds submit \
             --config infra/cloudbuild.yaml \
             --substitutions "_IMAGE=$IMAGE,_DOCKERFILE=infra/Dockerfile.backend" \
+            --suppress-logs \
             --project ${{ env.PROJECT_ID }} .
             
           # Tag as latest in Artifact Registry
