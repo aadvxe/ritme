@@ -145,7 +145,7 @@ gcloud run jobs deploy ritme-migrate \
   --set-cloudsql-instances "$INSTANCE_CONNECTION_NAME" \
   --set-env-vars "$COMMON_ENV" \
   --set-secrets "$SECRETS" \
-  --command alembic --args upgrade,head
+  --command "sh" --args "-c,alembic upgrade head"
 
 gcloud run jobs execute ritme-migrate --region "$REGION" --project "$GCP_PROJECT_ID" --wait
 
