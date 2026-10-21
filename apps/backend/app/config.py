@@ -61,10 +61,10 @@ class Settings(BaseSettings):
     def resolved_database_url(self) -> str:
         if self.instance_connection_name and self.db_name and self.db_user:
             # Cloud Run built-in Cloud SQL connection (unix socket); no public IP, no key files.
-            pw = quote_plus(self.db_password)
+            pw = quote_plus(self.db_password.strip())
             return (
-                f"postgresql+psycopg://{self.db_user}:{pw}@/{self.db_name}"
-                f"?host=/cloudsql/{self.instance_connection_name}"
+                f"postgresql+psycopg://{self.db_user.strip()}:{pw}@/{self.db_name.strip()}"
+                f"?host=/cloudsql/{self.instance_connection_name.strip()}"
             )
         return self.database_url
 

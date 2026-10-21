@@ -19,10 +19,10 @@ def main() -> None:
     if str(base_dir) not in sys.path:
         sys.path.insert(0, str(base_dir))
 
-    db_pass = os.environ.get("DB_PASSWORD", "")
-    inst = os.environ.get("INSTANCE_CONNECTION_NAME", "")
-    db_name = os.environ.get("DB_NAME", "ritme")
-    db_user = os.environ.get("DB_USER", "ritme")
+    db_pass = os.environ.get("DB_PASSWORD", "").strip()
+    inst = os.environ.get("INSTANCE_CONNECTION_NAME", "").strip()
+    db_name = os.environ.get("DB_NAME", "ritme").strip()
+    db_user = os.environ.get("DB_USER", "ritme").strip()
 
     if inst and db_pass:
         # Connect as postgres to ensure database ownership and public schema privileges
@@ -50,8 +50,11 @@ def main() -> None:
     except Exception as exc:
         print(f"--> Alembic upgrade failed: {exc}", file=sys.stderr)
         traceback.print_exc()
-        sys.exit(1)
+        raise
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        sys.exit(1)
