@@ -272,7 +272,7 @@ Write-Host "--> [6/8] Running database migrations (Cloud Run Job: ritme-migrate)
   --set-cloudsql-instances $InstanceConnectionName `
   --set-env-vars $CommonEnv `
   --set-secrets $Secrets `
-  --command "sh" --args='-c,alembic upgrade head'
+  --command python --args="-m,app.db.migrate"
 
 & gcloud run jobs execute ritme-migrate --region $Region --project $ProjectId --wait
 
