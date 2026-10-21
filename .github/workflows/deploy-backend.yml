@@ -48,8 +48,8 @@ jobs:
 
       - name: Run Backend & AI Engine Tests
         run: |
-          uv sync --package ritme-backend --package ritme-ai
-          uv run pytest packages/ai-engine/tests
+          uv sync --all-packages
+          uv run pytest packages/ai-engine/tests packages/contracts/tests
 
   deploy:
     name: Build & Deploy to Cloud Run
