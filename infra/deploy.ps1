@@ -6,21 +6,20 @@
   builds the backend container via Cloud Build, runs Alembic migrations via Cloud Run Jobs,
   and deploys the FastAPI backend to Cloud Run with Cloud SQL integration and Vercel CORS support.
 .EXAMPLE
-  $env:GCP_PROJECT_ID = "your-gcp-project"
-  $env:ALLOWED_ORIGINS = "https://your-app.vercel.app"
   .\infra\deploy.ps1
+  .\infra\deploy.ps1 -ProjectId "my-project-123" -AllowedOrigins "https://my-app.vercel.app"
 #>
 
 [CmdletBinding()]
 param(
   [Parameter(Mandatory = $false)]
-  [string]$ProjectId = $env:GCP_PROJECT_ID,
+  [string]$ProjectId,
 
   [Parameter(Mandatory = $false)]
-  [string]$AllowedOrigins = $env:ALLOWED_ORIGINS,
+  [string]$AllowedOrigins,
 
   [Parameter(Mandatory = $false)]
-  [string]$Region = $env:GCP_REGION,
+  [string]$Region,
 
   [Parameter(Mandatory = $false)]
   [string]$SqlInstance = "ritme-db",
@@ -34,17 +33,80 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-if (-not $ProjectId) {
-  Write-Error "Please specify -ProjectId or set `$env:GCP_PROJECT_ID."
+# Resolve repository root
+$RepoRoot = if (Test-Path (Join-Path $PSScriptRoot "..\package.json")) {
+  (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+} elseif (Test-Path ".\package.json") {
+  (Get-Location).Path
+} else {
+  (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+}
+
+# Auto-load environment variables from .env if present
+$envFile = Join-Path $RepoRoot ".env"
+if (Test-Path $envFile) {
+  Write-Host "--> Reading configuration from $envFile" -ForegroundColor DarkGray
+  Get-Content $envFile | ForEach-Object {
+    $line = $_.Trim()
+    if ($line -and -not $line.StartsWith("#") -and $line.Contains("=")) {
+      $parts = $line.Split("=", 2)
+      $key = $parts[0].Trim()
+      $val = $parts[1].Trim().Trim('"').Trim("'")
+      if (-not [System.Environment]::GetEnvironmentVariable($key)) {
+        [System.Environment]::SetEnvironmentVariable($key, $val)
+      }
+    }
+  }
+}
+
+# Fallbacks from environment
+if (-not $ProjectId -and $env:GCP_PROJECT_ID) { $ProjectId = $env:GCP_PROJECT_ID }
+if (-not $AllowedOrigins -and $env:ALLOWED_ORIGINS) { $AllowedOrigins = $env:ALLOWED_ORIGINS }
+if (-not $Region) {
+  $Region = if ($env:GCP_REGION) { $env:GCP_REGION } else { "asia-southeast2" }
+}
+
+# Check for gcloud CLI (auto-detect standard installation paths if not yet in current session PATH)
+if (-not (Get-Command gcloud -ErrorAction SilentlyContinue)) {
+  $candidatePaths = @(
+    "$env:LOCALAPPDATA\Google\Cloud SDK\google-cloud-sdk\bin",
+    "C:\Program Files\Google\Cloud SDK\google-cloud-sdk\bin",
+    "C:\Program Files (x86)\Google\Cloud SDK\google-cloud-sdk\bin"
+  )
+  foreach ($p in $candidatePaths) {
+    if (Test-Path (Join-Path $p "gcloud.cmd")) {
+      $env:Path = "$p;$env:Path"
+      Write-Host "--> Detected Google Cloud SDK at $p" -ForegroundColor DarkGray
+      break
+    }
+  }
+}
+
+if (-not (Get-Command gcloud -ErrorAction SilentlyContinue)) {
+  Write-Host "`n[ERROR] Google Cloud SDK ('gcloud') is not installed or not in your PATH!" -ForegroundColor Red
+  Write-Host "`nYou have two easy options to deploy:" -ForegroundColor Yellow
+  Write-Host "  Option 1 (Recommended - 0 Local Setup):" -ForegroundColor Cyan
+  Write-Host "    Open Google Cloud Shell in your browser: https://shell.cloud.google.com" -ForegroundColor White
+  Write-Host "    Clone your repo and run: bash infra/deploy.sh`n" -ForegroundColor Gray
+  Write-Host "  Option 2 (Install locally on Windows):" -ForegroundColor Cyan
+  Write-Host "    Run in terminal: winget install Google.CloudSDK" -ForegroundColor White
+  Write-Host "    Restart your terminal, then run: gcloud auth login" -ForegroundColor Gray
   exit 1
 }
 
-if (-not $AllowedOrigins) {
-  Write-Error "Please specify -AllowedOrigins (e.g. https://your-app.vercel.app) or set `$env:ALLOWED_ORIGINS."
+# Validation checks
+if (-not $ProjectId -or $ProjectId -eq "your-gcp-project-id") {
+  Write-Host "`n[ERROR] Missing or placeholder GCP Project ID!" -ForegroundColor Red
+  Write-Host "Please set GCP_PROJECT_ID in your .env file or pass -ProjectId 'your-id'." -ForegroundColor Yellow
   exit 1
 }
 
-if (-not $Region) { $Region = "asia-southeast2" }
+if (-not $AllowedOrigins -or $AllowedOrigins -eq "https://your-frontend.vercel.app") {
+  Write-Host "`n[ERROR] Missing or placeholder Vercel Allowed Origins!" -ForegroundColor Red
+  Write-Host "Please set ALLOWED_ORIGINS in your .env file (e.g. https://your-project.vercel.app) or pass -AllowedOrigins." -ForegroundColor Yellow
+  exit 1
+}
+
 $VertexLocation = if ($env:VERTEX_LOCATION) { $env:VERTEX_LOCATION } else { "us-central1" }
 $Repo = "ritme"
 $Image = "$Region-docker.pkg.dev/$ProjectId/$Repo/ritme-backend:latest"
@@ -54,9 +116,10 @@ $PublicWebUrl = $AllowedOrigins
 
 Write-Host "========================================================" -ForegroundColor Cyan
 Write-Host "Deploying Ritme Backend to Cloud Run & Cloud SQL" -ForegroundColor Cyan
-Write-Host "Project: $ProjectId"
-Write-Host "Region:  $Region"
-Write-Host "Origin:  $AllowedOrigins"
+Write-Host "Repo Root: $RepoRoot"
+Write-Host "Project:   $ProjectId"
+Write-Host "Region:    $Region"
+Write-Host "Origin:    $AllowedOrigins"
 Write-Host "========================================================" -ForegroundColor Cyan
 
 Write-Host "--> [1/8] Enabling required GCP APIs..." -ForegroundColor Yellow
@@ -165,10 +228,15 @@ if (-not $arCheck) {
   gcloud artifacts repositories create $Repo --repository-format=docker --location $Region --project $ProjectId
 }
 
-gcloud builds submit --tag $Image `
-  --config infra/cloudbuild.yaml `
-  --substitutions "_IMAGE=$Image,_DOCKERFILE=infra/Dockerfile.backend" `
-  --project $ProjectId .
+Push-Location $RepoRoot
+try {
+  gcloud builds submit --tag $Image `
+    --config "infra/cloudbuild.yaml" `
+    --substitutions "_IMAGE=$Image,_DOCKERFILE=infra/Dockerfile.backend" `
+    --project $ProjectId .
+} finally {
+  Pop-Location
+}
 
 $CommonEnv = "ENVIRONMENT=production,GCP_PROJECT_ID=$ProjectId,GCP_REGION=$Region,VERTEX_LOCATION=$VertexLocation,LLM_PROVIDER=vertex,INSTANCE_CONNECTION_NAME=$InstanceConnectionName,DB_NAME=ritme,DB_USER=ritme,FIREBASE_PROJECT_ID=$ProjectId"
 $Secrets = "DB_PASSWORD=ritme-db-password:latest,EXTENSION_TOKEN_SECRET=ritme-extension-token-secret:latest"

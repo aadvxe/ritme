@@ -71,7 +71,7 @@ class Settings(BaseSettings):
     @property
     def cors_origins(self) -> list[str]:
         import re
-        origins = [o.strip() for o in re.split(r"[,;|\s]+", self.allowed_origins) if o.strip()]
+        origins = [o.strip().rstrip("/") for o in re.split(r"[,;|\s]+", self.allowed_origins) if o.strip()]
         if self.extension_id:
             origins.append(f"chrome-extension://{self.extension_id}")
         return origins
