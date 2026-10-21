@@ -100,7 +100,8 @@ jobs:
             --set-cloudsql-instances "$INSTANCE_CONN" \
             --set-env-vars "$COMMON_ENV" \
             --set-secrets "$SECRETS" \
-            --command python --args -m,app.db.migrate
+            --command=python \
+            --args="-m,app.db.migrate"
 
           gcloud run jobs execute ritme-migrate --region ${{ env.REGION }} --project ${{ env.PROJECT_ID }} --wait
 
