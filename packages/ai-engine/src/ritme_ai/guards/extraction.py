@@ -27,7 +27,7 @@ from ritme_contracts import (
     WorkflowExtraction,
 )
 
-from . import attribution, dates, injection
+from . import attribution, dates, injection, transcript
 from .evidence import SourceSet, verify_requirement_evidence
 from .preferences import summary_limit
 from .text import limit_text, norm
@@ -93,6 +93,10 @@ def apply_extraction_guards(
     if hits and injection.INJECTION_NOTE not in notes:
         notes.append(injection.INJECTION_NOTE)
 
+    thread = transcript.parse_transcript(inp.content_text)
+    if thread and len(thread.senders) > 1 and transcript.NOTE_WHO_IS_YOU not in notes:
+        notes.append(transcript.NOTE_WHO_IS_YOU)
+
     today = _today(inp)
     allowed_dates = {
         e.value for e in dates.find_exact_dates(source_text, today)
@@ -138,6 +142,8 @@ def apply_extraction_guards(
                         "is stated.",
                     }
                 )
+        if thread:
+            req = transcript.attribute_requirement(req, thread, inp.content_text)
         kept.append(req)
 
     kept_ids = {r.id for r in kept}

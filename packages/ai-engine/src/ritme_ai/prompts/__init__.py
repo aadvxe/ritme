@@ -14,6 +14,8 @@ from typing import Any
 from ..blocks import render_parameters
 
 POLICY_VERSION = "v1"
+# Newest version of each step prompt; older files stay in place so past runs remain reproducible.
+CURRENT_VERSIONS = {"extract": "v2"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,12 +35,15 @@ def _read(filename: str) -> str:
     return resources.files(__package__).joinpath(filename).read_text(encoding="utf-8")
 
 
-def load_prompt(name: str, version: str = "v1") -> Prompt:
+def load_prompt(name: str, version: str | None = None) -> Prompt:
+    version = version or CURRENT_VERSIONS.get(name, "v1")
     body = _read(f"{name}.{version}.md")
     return Prompt(name, version, body)
 
 
-def build_system(name: str, parameters: dict[str, Any], version: str = "v1") -> tuple[str, str]:
+def build_system(
+    name: str, parameters: dict[str, Any], version: str | None = None
+) -> tuple[str, str]:
     """Return (system prompt, prompt version id). `parameters` must hold trusted values only."""
     policy = _read(f"policy.{POLICY_VERSION}.md")
     step = load_prompt(name, version)

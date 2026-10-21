@@ -1,0 +1,207 @@
+{
+  "date": "2026-10-18T18:33:24+00:00",
+  "target": {
+    "api": "http://localhost:8090",
+    "llm": "fake (scripted FakeLlm)",
+    "db": "PostgreSQL 16 in Docker",
+    "api_workers": 1
+  },
+  "machine": {
+    "os": "Windows-11-10.0.26300-SP0",
+    "python": "3.12.13",
+    "cpu_logical_cores": 14,
+    "ram_gb": 15.4,
+    "cpu": "Intel(R) Core(TM) Ultra 5 225H"
+  },
+  "sequential_requests_per_endpoint": 150,
+  "endpoints_ms": {
+    "GET /healthz (no auth)": {
+      "n": 150,
+      "min": 0.9,
+      "p50": 1.4,
+      "p95": 2.1,
+      "p99": 2.3,
+      "max": 2.6,
+      "mean": 1.5,
+      "errors": 0
+    },
+    "GET /api/me": {
+      "n": 150,
+      "min": 10.2,
+      "p50": 13.2,
+      "p95": 19.2,
+      "p99": 25.1,
+      "max": 75.8,
+      "mean": 14.4,
+      "errors": 0
+    },
+    "GET /api/dashboard": {
+      "n": 150,
+      "min": 17.5,
+      "p50": 23.4,
+      "p95": 30.5,
+      "p99": 49.7,
+      "max": 129.5,
+      "mean": 24.7,
+      "errors": 0
+    },
+    "GET /api/workflows": {
+      "n": 150,
+      "min": 11.3,
+      "p50": 16.2,
+      "p95": 27.3,
+      "p99": 44.4,
+      "max": 70.5,
+      "mean": 17.8,
+      "errors": 0
+    },
+    "GET /api/workflows/{id} (full Canvas payload)": {
+      "n": 150,
+      "min": 17.2,
+      "p50": 23.4,
+      "p95": 33.6,
+      "p99": 36.8,
+      "max": 47.8,
+      "mean": 24.5,
+      "errors": 0
+    },
+    "GET /api/calendar-overview (30 days)": {
+      "n": 150,
+      "min": 13.3,
+      "p50": 17.8,
+      "p95": 26.2,
+      "p99": 33.6,
+      "max": 48.6,
+      "mean": 18.9,
+      "errors": 0
+    },
+    "POST /api/knowledge/search": {
+      "n": 150,
+      "min": 10.0,
+      "p50": 13.7,
+      "p95": 19.3,
+      "p99": 22.5,
+      "max": 25.4,
+      "mean": 14.2,
+      "errors": 0
+    },
+    "POST /api/captures (create + enqueue)": {
+      "n": 150,
+      "min": 20.0,
+      "p50": 28.0,
+      "p95": 34.7,
+      "p99": 37.3,
+      "max": 40.0,
+      "mean": 28.1,
+      "errors": 0
+    },
+    "_rate_limit_check": {
+      "first_60_ok": 60,
+      "after_60_status_codes": [
+        429
+      ]
+    }
+  },
+  "pipeline": {
+    "runs": 12,
+    "capture_to_truth_board_ms": {
+      "n": 12,
+      "min": 69.5,
+      "p50": 74.7,
+      "p95": 89.5,
+      "p99": 92.6,
+      "max": 93.4,
+      "mean": 76.9
+    },
+    "answers_to_plan_ms": {
+      "n": 12,
+      "min": 75.3,
+      "p50": 85.1,
+      "p95": 89.1,
+      "p99": 90.6,
+      "max": 91.0,
+      "mean": 84.0
+    },
+    "approve_execute_verify_ms": {
+      "n": 12,
+      "min": 69.6,
+      "p50": 82.2,
+      "p95": 96.3,
+      "p99": 102.6,
+      "max": 104.2,
+      "mean": 81.8
+    },
+    "demo_journey_total_ms": {
+      "n": 12,
+      "min": 317.1,
+      "p50": 342.7,
+      "p95": 378.5,
+      "p99": 385.9,
+      "max": 387.7,
+      "mean": 346.9
+    },
+    "executions_verified": "12/12"
+  },
+  "concurrency": {
+    "dashboard_reads_8_parallel": {
+      "requests": 320,
+      "errors": 0,
+      "throughput_rps": 42.2,
+      "p50": 98.1,
+      "p95": 451.3,
+      "p99": 2182.9,
+      "max": 2369.9
+    },
+    "dashboard_reads_16_parallel": {
+      "requests": 400,
+      "errors": 0,
+      "throughput_rps": 43.9,
+      "p50": 239.8,
+      "p95": 736.7,
+      "p99": 2324.3,
+      "max": 2523.3
+    },
+    "full_journey_10_concurrent_users": {
+      "completed_verified": "10/10",
+      "wall_clock_s": 3.77,
+      "min": 3583.9,
+      "p50": 3664.4,
+      "p95": 3723.9,
+      "max": 3726.9
+    },
+    "idempotent_capture_race_20_threads": {
+      "responses_201_created": 1,
+      "responses_replayed": 19,
+      "other_statuses": [],
+      "captures_stored": 1
+    },
+    "execute_race_12_threads": {
+      "status_codes": {
+        "200": 5,
+        "409": 7
+      },
+      "tasks_in_plan": 6,
+      "tasks_created": 6,
+      "duplicates": 0
+    },
+    "read_after_write_60_rounds": {
+      "stale_reads": 0,
+      "rounds": 60
+    }
+  },
+  "bundles": {
+    "frontend": {
+      "js_total_kb": 908.0,
+      "js_total_gzip_kb": 252.9,
+      "css_total_kb": 36.8,
+      "largest_js_kb": 665.6,
+      "js_files": 4,
+      "font_files_kb": 257.4
+    },
+    "extension": {
+      "package_total_kb": 973.2,
+      "js_total_kb": 344.2,
+      "page_reader_js_kb": 10.1
+    }
+  }
+}

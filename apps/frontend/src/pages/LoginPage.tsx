@@ -1,4 +1,4 @@
-import { Alert, Button, Wordmark } from "@ritme/design";
+import { Alert, Button, Field, Input, Wordmark } from "@ritme/design";
 import { useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
@@ -53,9 +53,12 @@ function ShowcaseCards() {
 }
 
 export function LoginPage() {
-  const { status, signIn, error, configured } = useAuth();
+  const { status, signIn, signInLocal, localSignInAvailable, error, configured } = useAuth();
   const loc = useLocation();
   const [busy, setBusy] = useState(false);
+  const [localBusy, setLocalBusy] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   useDocumentTitle("Sign in");
 
   if (status === "signedIn") {
@@ -119,6 +122,33 @@ export function LoginPage() {
             {!busy && !env.useMock && <GoogleMark />}
             {busy ? s.login.signingIn : env.useMock ? s.login.demo : s.login.google}
           </Button>
+
+          {localSignInAvailable && (
+            <section aria-labelledby="local-signin" className="space-y-3 rounded-2xl border border-dashed border-border bg-background p-4" data-testid="local-signin">
+              <h2 id="local-signin" className="text-sm font-semibold text-navy">
+                {s.login.local.title}
+              </h2>
+              <p className="text-xs text-text-secondary">{s.login.local.note}</p>
+              <form
+                className="space-y-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setLocalBusy(true);
+                  void signInLocal(email.trim(), password).finally(() => setLocalBusy(false));
+                }}
+              >
+                <Field label={s.login.local.email} htmlFor="local-email">
+                  <Input id="local-email" type="email" autoComplete="off" required value={email} onChange={(e) => setEmail(e.target.value)} />
+                </Field>
+                <Field label={s.login.local.password} htmlFor="local-password">
+                  <Input id="local-password" type="password" autoComplete="off" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} />
+                </Field>
+                <Button type="submit" variant="outline" className="w-full" loading={localBusy} disabled={status === "loading"}>
+                  {localBusy ? s.login.local.signingIn : s.login.local.submit}
+                </Button>
+              </form>
+            </section>
+          )}
 
           {env.useMock && <p className="text-sm text-text-secondary">{s.login.demoNote}</p>}
           {!env.useMock && env.useAuthEmulator && <p className="text-sm text-text-secondary">{s.login.emulatorNote}</p>}

@@ -9,6 +9,10 @@ os.environ["DATABASE_URL"] = os.environ.get(
 os.environ["ENVIRONMENT"] = "local"
 os.environ["LLM_PROVIDER"] = "fake"
 os.environ["RUN_QUEUE"] = "local"
+# Tests must not depend on a developer's local .env (ports, extension id): pin what they assert on.
+os.environ["ALLOWED_ORIGINS"] = "http://localhost:5173"
+os.environ["EXTENSION_ID"] = ""
+os.environ["FIREBASE_AUTH_EMULATOR_HOST"] = ""
 
 import psycopg  # noqa: E402
 import pytest  # noqa: E402

@@ -13,7 +13,16 @@ export default defineConfig({
     include: ["src/**/*.test.{ts,tsx}"],
     css: false,
     // Dates are stored as UTC and shown in local time; tests run in a fixed zone away from UTC.
-    env: { TZ: "Asia/Jakarta" },
+    // Tests are hermetic: a developer's .env.local (emulator, mock API, extension id) must not leak in.
+    env: {
+      TZ: "Asia/Jakarta",
+      VITE_USE_MOCK_API: "false",
+      VITE_USE_AUTH_EMULATOR: "false",
+      VITE_EXTENSION_ID: "",
+      VITE_API_BASE_URL: "http://localhost:8080",
+      VITE_FIREBASE_API_KEY: "",
+      VITE_FIREBASE_PROJECT_ID: "",
+    },
     restoreMocks: true,
   },
 });

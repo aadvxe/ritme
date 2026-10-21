@@ -6,11 +6,13 @@ from ritme_contracts import EngineStep, ExtractInput, StepMeta, WorkflowExtracti
 
 from ..blocks import render_block, render_json_block
 from ..guards.extraction import apply_extraction_guards, check_extraction
+from ..guards.transcript import parse_transcript
 from ..llm.base import LlmAdapter
 from .base import base_parameters, call_llm, make_meta
 
 
 def build_blocks(inp: ExtractInput) -> list[str]:
+    thread = parse_transcript(inp.content_text)
     blocks = [
         render_block(
             "capture",
@@ -18,6 +20,8 @@ def build_blocks(inp: ExtractInput) -> list[str]:
             source_id=inp.capture_id,
             title=inp.title,
             source_domain=inp.source_domain,
+            format="transcript" if thread else None,
+            senders=" | ".join(thread.senders) if thread else None,
         )
     ]
     if inp.user_note:

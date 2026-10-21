@@ -45,7 +45,7 @@ router = APIRouter()
 
 
 @router.get("/me", response_model=MeOut, response_model_by_alias=True)
-def me(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> MeOut:
+def me(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> MeOut:
     u = session.get(m.User, user_id)
     assert u is not None
     return MeOut(
@@ -58,7 +58,7 @@ def me(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_se
 
 
 @router.post("/me/onboarding", response_model=MeOut, response_model_by_alias=True)
-def complete_onboarding(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> MeOut:
+def complete_onboarding(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> MeOut:
     u = session.get(m.User, user_id)
     assert u is not None
     u.onboarding_completed = True
@@ -92,7 +92,7 @@ def _prefs_out(row: m.UserPreferences | None) -> PreferencesOut:
 
 
 @router.get("/preferences", response_model=PreferencesOut, response_model_by_alias=True)
-def get_preferences(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> PreferencesOut:
+def get_preferences(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> PreferencesOut:
     return _prefs_out(session.get(m.UserPreferences, user_id))
 
 
@@ -115,25 +115,25 @@ def _apply_prefs(session: Session, user_id: uuid.UUID, patch: PreferencesPatch) 
 
 @router.patch("/preferences", response_model=PreferencesOut, response_model_by_alias=True)
 def patch_preferences(
-    body: PreferencesPatch, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)
+    body: PreferencesPatch, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")
 ) -> PreferencesOut:
     return _apply_prefs(session, user_id, body)
 
 
 @router.post("/preferences/import", response_model=PreferencesOut, response_model_by_alias=True)
 def import_preferences(
-    body: PreferencesPatch, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)
+    body: PreferencesPatch, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")
 ) -> PreferencesOut:
     return _apply_prefs(session, user_id, body)
 
 
 @router.get("/preferences/export", response_model=PreferencesOut, response_model_by_alias=True)
-def export_preferences(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> PreferencesOut:
+def export_preferences(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> PreferencesOut:
     return _prefs_out(session.get(m.UserPreferences, user_id))
 
 
 @router.delete("/preferences", response_model=PreferencesOut, response_model_by_alias=True)
-def reset_preferences(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> PreferencesOut:
+def reset_preferences(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> PreferencesOut:
     row = session.get(m.UserPreferences, user_id)
     if row is not None:
         session.delete(row)
@@ -156,7 +156,7 @@ def post_capture(
     body: CaptureCreate,
     response: Response,
     principal: Principal = Depends(capture_writer),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     settings: Settings = Depends(get_settings),
 ) -> CaptureCreateResponse:
     result = create_capture(session, principal.user_id, body, settings)
@@ -181,7 +181,7 @@ def post_capture(
 def list_captures(
     limit: int = Query(20, ge=1, le=100),
     user_id: uuid.UUID = Depends(web_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> list[CaptureOut]:
     rows = session.scalars(
         select(m.Capture).where(m.Capture.user_id == user_id).order_by(m.Capture.created_at.desc()).limit(limit)
@@ -194,14 +194,14 @@ def list_captures(
 
 
 @router.get("/captures/{capture_id}", response_model=CaptureOut, response_model_by_alias=True)
-def get_capture(capture_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> CaptureOut:
+def get_capture(capture_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> CaptureOut:
     c = get_owned(session, m.Capture, capture_id, user_id, "Capture")
     wf = session.scalar(select(m.Workflow).where(m.Workflow.capture_id == c.id))
     return mappers.capture_out(c, wf.id if wf else None)
 
 
 @router.delete("/captures/{capture_id}", response_model=DeletionResult, response_model_by_alias=True)
-def remove_capture(capture_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> DeletionResult:
+def remove_capture(capture_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> DeletionResult:
     c = get_owned(session, m.Capture, capture_id, user_id, "Capture")
     return delete_capture(session, user_id, c)
 
@@ -212,7 +212,7 @@ def remove_capture(capture_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user)
     response_model_by_alias=True,
     dependencies=[Depends(rate_limit("analyze"))],
 )
-def analyze_capture(capture_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> WorkflowSummary:
+def analyze_capture(capture_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> WorkflowSummary:
     c = get_owned(session, m.Capture, capture_id, user_id, "Capture")
     wf = session.scalar(select(m.Workflow).where(m.Workflow.capture_id == c.id))
     if wf is None:
@@ -238,7 +238,7 @@ def analyze_capture(capture_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user
 def list_workflows(
     status: WorkflowStatus | None = None,
     user_id: uuid.UUID = Depends(web_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> list[WorkflowSummary]:
     q = select(m.Workflow).where(m.Workflow.user_id == user_id)
     if status:
@@ -311,7 +311,7 @@ def build_detail(session: Session, wf: m.Workflow) -> WorkflowDetail:
 
 
 @router.get("/workflows/{workflow_id}", response_model=WorkflowDetail, response_model_by_alias=True)
-def get_workflow_detail(workflow_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> WorkflowDetail:
+def get_workflow_detail(workflow_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> WorkflowDetail:
     return build_detail(session, get_workflow(session, workflow_id, user_id))
 
 
@@ -320,7 +320,7 @@ def patch_workflow(
     workflow_id: uuid.UUID,
     body: WorkflowPatch,
     user_id: uuid.UUID = Depends(web_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> WorkflowSummary:
     wf = get_workflow(session, workflow_id, user_id)
     if body.version != wf.version:
@@ -342,7 +342,7 @@ def patch_workflow(
 
 
 @router.delete("/workflows/{workflow_id}", response_model=DeletionResult, response_model_by_alias=True)
-def remove_workflow(workflow_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> DeletionResult:
+def remove_workflow(workflow_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> DeletionResult:
     wf = get_workflow(session, workflow_id, user_id)
     removed = delete_workflow(session, user_id, wf)
     log_event(session, user_id, "workflow_deleted", "A workflow was deleted.")
@@ -363,17 +363,17 @@ def _set_paused(session: Session, user_id: uuid.UUID, workflow_id: uuid.UUID, pa
 
 
 @router.post("/workflows/{workflow_id}/pause", response_model=WorkflowSummary, response_model_by_alias=True)
-def pause_workflow(workflow_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> WorkflowSummary:
+def pause_workflow(workflow_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> WorkflowSummary:
     return _set_paused(session, user_id, workflow_id, True)
 
 
 @router.post("/workflows/{workflow_id}/resume", response_model=WorkflowSummary, response_model_by_alias=True)
-def resume_workflow(workflow_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> WorkflowSummary:
+def resume_workflow(workflow_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> WorkflowSummary:
     return _set_paused(session, user_id, workflow_id, False)
 
 
 @router.post("/workflows/{workflow_id}/cancel", response_model=WorkflowSummary, response_model_by_alias=True)
-def cancel_workflow(workflow_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> WorkflowSummary:
+def cancel_workflow(workflow_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> WorkflowSummary:
     wf = get_workflow(session, workflow_id, user_id)
     if wf.status != WorkflowStatus.CANCELLED.value:  # idempotent
         sm.assert_workflow(wf.status, WorkflowStatus.CANCELLED.value)
@@ -413,7 +413,7 @@ def workflow_activity(
     cursor: str | None = None,
     limit: int = Query(30, ge=1, le=100),
     user_id: uuid.UUID = Depends(web_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> ActivityPage:
     wf = get_workflow(session, workflow_id, user_id)
     return _page(session, select(m.ActivityEvent).where(m.ActivityEvent.workflow_id == wf.id), limit, cursor)
@@ -424,6 +424,6 @@ def user_activity(
     cursor: str | None = None,
     limit: int = Query(30, ge=1, le=100),
     user_id: uuid.UUID = Depends(web_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> ActivityPage:
     return _page(session, select(m.ActivityEvent).where(m.ActivityEvent.user_id == user_id), limit, cursor)

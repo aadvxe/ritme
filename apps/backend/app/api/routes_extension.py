@@ -47,7 +47,7 @@ def _response(settings: Settings, user_id: uuid.UUID, device_id: uuid.UUID, refr
 def connect(
     body: ExtensionConnectRequest,
     user_id: uuid.UUID = Depends(web_user),  # needs the real web session — extension tokens cannot mint more
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     settings: Settings = Depends(get_settings),
 ) -> ExtensionTokenResponse:
     refresh = tokens.new_refresh_token()
@@ -66,7 +66,7 @@ def connect(
 @router.post("/refresh", response_model=ExtensionTokenResponse, response_model_by_alias=True)
 def refresh(
     body: ExtensionRefreshRequest,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     settings: Settings = Depends(get_settings),
 ) -> ExtensionTokenResponse:
     device = session.scalar(
@@ -86,7 +86,7 @@ def refresh(
 
 
 @router.get("/devices", response_model=list[ConnectedDevice], response_model_by_alias=True)
-def devices(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> list[ConnectedDevice]:
+def devices(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> list[ConnectedDevice]:
     rows = session.scalars(
         select(m.ExtensionDevice).where(m.ExtensionDevice.user_id == user_id).order_by(m.ExtensionDevice.created_at.desc())
     ).all()
@@ -94,7 +94,7 @@ def devices(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(g
 
 
 @router.delete("/devices/{device_id}", response_model=ConnectedDevice, response_model_by_alias=True)
-def revoke(device_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> ConnectedDevice:
+def revoke(device_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> ConnectedDevice:
     d = get_owned(session, m.ExtensionDevice, device_id, user_id, "Device")
     if d.revoked_at is None:
         d.revoked_at = datetime.now(UTC)

@@ -1,40 +1,53 @@
-import { useState } from "react";
-import { Badge, Button, Card, Field, Spinner, Textarea, Wordmark } from "@ritme/design";
-import { MAX_CAPTURE_CHARS } from "../config";
+import { useEffect, useState } from "react";
+import { Badge, Button, Card, Spinner, Wordmark } from "@ritme/design";
+import { adapterForUrl } from "../extract/registry";
 import { disconnect, openConnectPage } from "../lib/auth";
-import { captureUrl, createDraft } from "../lib/capture";
-import { saveDraft } from "../lib/storage";
+import { FAIL_MESSAGES, captureTab, openOutcome } from "../lib/capture-tab";
 import { useConnected } from "../ui/hooks";
-import { InfoGlyph, NotConnectedIcon, SuccessIcon } from "../ui/icons";
+import { ErrorIcon, InfoGlyph, NotConnectedIcon, SuccessIcon } from "../ui/icons";
 import { StatusNotice } from "../ui/StatusNotice";
 
-async function activeTabDetails(): Promise<{ title: string | null; url: string | null }> {
+type ActiveTab = { id?: number; title?: string; url?: string };
+
+async function getActiveTab(): Promise<ActiveTab | null> {
   try {
-    // activeTab grants this only because the user opened the popup, and only for the current tab.
+    // activeTab makes the current tab's URL and title readable because the user opened this popup.
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    return { title: tab?.title ?? null, url: tab?.url ?? null };
+    return tab ? { id: tab.id, title: tab.title, url: tab.url } : null;
   } catch {
-    return { title: null, url: null };
+    return null;
   }
 }
 
 export function Popup() {
   const connected = useConnected();
-  const [text, setText] = useState("");
-  const [attachTab, setAttachTab] = useState(false);
+  const [tab, setTab] = useState<ActiveTab | null | undefined>(undefined);
   const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  async function review() {
-    if (busy || !text.trim()) return;
+  useEffect(() => {
+    let alive = true;
+    void getActiveTab().then((t) => alive && setTab(t));
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  const adapter = adapterForUrl(tab?.url);
+
+  async function capture() {
+    if (busy || !tab) return;
     setBusy(true);
-    const tab = attachTab ? await activeTabDetails() : { title: null, url: null };
-    const draft = createDraft({ text, sourceType: "manual_text", pageTitle: tab.title, url: tab.url });
-    await saveDraft(draft);
-    await chrome.tabs.create({ url: captureUrl(draft.draftId), active: true });
+    setError(null);
+    const outcome = await captureTab(tab);
+    if (!outcome.ok) {
+      setError(FAIL_MESSAGES[outcome.reason]);
+      setBusy(false);
+      return;
+    }
+    await openOutcome(outcome);
     window.close();
   }
-
-  const overLimit = text.length > MAX_CAPTURE_CHARS;
 
   return (
     <main className="space-y-4 p-4">
@@ -55,7 +68,7 @@ export function Popup() {
 
       {connected === false && (
         <StatusNotice tone="warning" icon={<NotConnectedIcon />} title="Connect to save">
-          <p>Connect this browser to your Ritme account so it can receive text you choose to save.</p>
+          <p>Connect this browser to your Ritme account so it can receive what you choose to save.</p>
           <Button className="mt-2" size="sm" onClick={() => void openConnectPage()}>
             Connect to Ritme
           </Button>
@@ -63,29 +76,45 @@ export function Popup() {
       )}
 
       <Card className="space-y-3 p-4">
-        <h1 className="text-base font-semibold text-navy">Paste text to save</h1>
-        <p className="text-xs text-text-secondary">
-          Ritme only saves text you select (right-click, then “Save selection to Ritme”) or paste here. It never reads a page on its own.
-        </p>
-        <Field
-          label="Text"
-          htmlFor="popup-text"
-          error={overLimit ? `That's over the ${MAX_CAPTURE_CHARS.toLocaleString()} character limit. You can shorten it in the next step.` : undefined}
-        >
-          <Textarea id="popup-text" value={text} onChange={(e) => setText(e.target.value)} placeholder="Paste something you need to act on…" />
-        </Field>
-        <label className="flex items-start gap-2 text-xs text-text-secondary">
-          <input type="checkbox" className="mt-0.5 h-4 w-4 accent-primary-strong" checked={attachTab} onChange={(e) => setAttachTab(e.target.checked)} />
-          <span>Also attach this tab's title and address. You can remove them in the preview.</span>
-        </label>
-        <Button className="w-full" onClick={() => void review()} disabled={!text.trim()} loading={busy}>
-          Review before saving
-        </Button>
+        {tab === undefined ? (
+          <div className="flex items-center gap-2 text-sm text-text-secondary">
+            <Spinner label="Checking this tab" className="h-4 w-4" /> Checking this tab…
+          </div>
+        ) : adapter ? (
+          <>
+            <StatusNotice tone="success" icon={<SuccessIcon />} title={`${adapter.appName} detected`}>
+              <p>Ritme can read the messages on screen in this conversation. You'll review them before anything is saved.</p>
+            </StatusNotice>
+            <p className="text-xs text-text-secondary">
+              If you've selected text, only the selection is captured. Otherwise the latest 30 messages shown on the page.
+            </p>
+            <Button className="w-full" onClick={() => void capture()} loading={busy}>
+              Capture this conversation
+            </Button>
+          </>
+        ) : (
+          <>
+            <h1 className="text-base font-semibold text-navy">Save selected text</h1>
+            <p className="text-xs text-text-secondary">
+              Select text on the page, then use the Ritme button or right-click and choose “Save selection to Ritme”.
+            </p>
+            <Button className="w-full" variant="outline" onClick={() => void capture()} loading={busy} disabled={!tab}>
+              Save selected text
+            </Button>
+          </>
+        )}
+
+        {error && (
+          <StatusNotice tone="error" icon={<ErrorIcon />} title="Nothing was captured">
+            <p>{error}</p>
+          </StatusNotice>
+        )}
+
         <p className="flex items-start gap-2 text-xs text-text-muted">
           <span aria-hidden="true" className="mt-0.5 h-3.5 w-3.5 shrink-0">
             <InfoGlyph />
           </span>
-          Nothing is sent until you press Save on the next screen.
+          Ritme reads the page only when you ask, once. Nothing is sent until you press Save on the next screen.
         </p>
       </Card>
 

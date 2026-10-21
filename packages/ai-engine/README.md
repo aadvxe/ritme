@@ -65,7 +65,7 @@ src/ritme_ai/
   schemas.py       flat model-output schemas for plan/replan
   llm/             LlmAdapter interface, Result/LlmError, repair loop, vertex.py, fake.py, fixtures.py
   steps/           extract, plan, replan, draft_clarification, collab_guide
-  prompts/         policy.v1.md + <step>.v1.md (versioned; the id e.g. "extract.v1" goes in StepMeta)
+  prompts/         policy.v1.md + <step>.v1.md (versioned; the id e.g. "extract.v2" goes in StepMeta)
   guards/          dates, evidence, injection, attribution, communication, graph, preferences,
                    extraction, plan, replan
 ```
@@ -88,6 +88,17 @@ How the pieces enforce the spec:
   mapping; dependency/cycle validation; replans can only change the code-computed blast radius and
   never completed tasks; communication guardrails (no masking advice, no diagnosis labels, hedged
   "Possible interpretation" notes, safe template fallback).
+
+## Chat and email transcripts
+
+Captures may be transcripts from WhatsApp, Telegram, Teams, Slack, Gmail or Outlook (first line
+`Chat: <title> (<App>)`, then `[time] Sender: message`; a plain selection may have no header). The
+`extract.v2` prompt and `guards/transcript.py` treat them as attributed untrusted data: requests and
+deadlines are attributed to the sender who wrote them (name in the requirement text, evidence is the
+exact message excerpt), a first-person commitment ("I'll review it") becomes a fact about that sender
+rather than a task, small talk yields nothing, owners/approvers stay unknown unless a message says so,
+and a note records that the conversation does not say which participant is the user. `extract.v1`
+stays in the repo for reproducing old runs.
 
 ## Tests
 

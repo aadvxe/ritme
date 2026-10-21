@@ -34,6 +34,8 @@ from ritme_contracts import (
 )
 
 from ..blocks import DataBlock, parse_blocks, parse_parameters
+from ..guards.dates import find_vague_dates
+from ..guards.transcript import Transcript, parse_transcript
 from ..schemas import ChangeReason, PlanModelOutput, ReplanModelOutput
 
 DEMO_MESSAGE = (
@@ -82,6 +84,9 @@ def extract_fixture(system: str, untrusted: str) -> WorkflowExtraction:
     knowledge = [b for b in blocks if b.name == "knowledge"]
     if "everyone is aligned" in text.lower() and "proposal" in text.lower():
         return _demo_extraction(sid, text, knowledge)
+    thread = parse_transcript(text)
+    if thread and len(thread.senders) > 1:
+        return _transcript_extraction(sid, text, thread)
     return _generic_extraction(sid, text)
 
 
@@ -202,6 +207,74 @@ def _demo_extraction(sid: str, text: str, knowledge: list[DataBlock]) -> Workflo
         "everyone is aligned before it is sent. The date and who must align are not specified.",
         confidence_notes=[],
     )
+
+
+_ASK = re.compile(
+    r"\b(can you|could you|please|need you|would you|send|finish|prepare)\b", re.IGNORECASE
+)
+_COMMIT = re.compile(r"^\s*(i'?ll|i will|i can|let me)\b", re.IGNORECASE)
+
+
+def _transcript_extraction(sid: str, text: str, thread: Transcript) -> WorkflowExtraction:
+    """Naive reading of a chat: every ask and every "I'll ..." becomes an explicit instruction.
+
+    Small talk is skipped. The transcript guard attributes requests to senders and turns
+    commitments into facts about that sender.
+    """
+    reqs: list[RequirementItem] = []
+    first_ask: str | None = None
+    for m in thread.messages:
+        body = text[m.body_start : m.end].strip()
+        if not body:
+            continue
+        committed = bool(_COMMIT.match(body))
+        asked = bool(_ASK.search(body))
+        if not (committed or asked):
+            continue
+        rid = f"r{len(reqs) + 1}"
+        if asked and not committed and first_ask is None:
+            first_ask = body
+            reqs.append(
+                RequirementItem(
+                    id=rid,
+                    kind=RequirementKind.OBJECTIVE,
+                    certainty=Certainty.EXPLICIT,
+                    importance=Importance.USEFUL,
+                    text=body.rstrip("?.!"),
+                    evidence=_ev(sid, body),
+                )
+            )
+        else:
+            reqs.append(
+                RequirementItem(
+                    id=rid,
+                    kind=RequirementKind.INSTRUCTION,
+                    certainty=Certainty.EXPLICIT,
+                    importance=Importance.USEFUL,
+                    text=body.rstrip("?.!"),
+                    evidence=_ev(sid, body),
+                )
+            )
+        vague = find_vague_dates(body)
+        if vague and not committed:
+            reqs.append(
+                RequirementItem(
+                    id=f"r{len(reqs) + 1}",
+                    kind=RequirementKind.DEADLINE,
+                    certainty=Certainty.EXPLICIT,
+                    importance=Importance.BLOCKING,
+                    text=f"Due {vague[0]}.",
+                    evidence=_ev(sid, vague[0]),
+                )
+            )
+    if not reqs:
+        return _generic_extraction(sid, text)
+    title = " ".join((first_ask or reqs[0].text).split()[:6]).rstrip(".?!,")
+    return WorkflowExtraction(
+        suggested_title=title, objective=(first_ask or reqs[0].text).rstrip("?.!"),
+        requirements=reqs, questions=[], summary=(first_ask or reqs[0].text)[:300],
+        confidence_notes=[],
+    )  # fmt: skip
 
 
 def _generic_extraction(sid: str, text: str) -> WorkflowExtraction:

@@ -58,7 +58,7 @@ def _engine_error(exc: EngineError) -> AppError:
 @router.patch("/workflows/{workflow_id}/requirements/{req_id}", response_model=RequirementItem, response_model_by_alias=True)
 def patch_requirement(
     workflow_id: uuid.UUID, req_id: str, body: RequirementPatch,
-    user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session),
+    user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function"),
 ) -> RequirementItem:
     wf = get_workflow(session, workflow_id, user_id)
     r = session.get(m.Requirement, (wf.id, req_id))
@@ -85,7 +85,7 @@ def patch_requirement(
 @router.post("/workflows/{workflow_id}/questions/{question_id}/answer", response_model=WorkflowDetail, response_model_by_alias=True)
 def answer_question(
     workflow_id: uuid.UUID, question_id: str, body: AnswerRequest,
-    user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session),
+    user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function"),
 ) -> WorkflowDetail:
     wf = get_workflow(session, workflow_id, user_id)
     q = session.get(m.ClarificationQuestionRow, (wf.id, question_id))
@@ -138,7 +138,7 @@ def answer_question(
 )
 def draft_clarification(
     workflow_id: uuid.UUID, question_id: str,
-    user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session),
+    user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function"),
 ) -> DraftClarificationResponse:
     """Pre-writes a message for the user to send THEMSELVES. Never sent by Ritme."""
     wf = get_workflow(session, workflow_id, user_id)
@@ -174,7 +174,7 @@ def _plan_out(session: Session, row: m.PlanVersion) -> PlanVersionOut:
 
 
 @router.post("/workflows/{workflow_id}/plan", response_model=PlanVersionOut, response_model_by_alias=True, dependencies=[Depends(rate_limit("model"))])
-def make_plan(workflow_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> PlanVersionOut:
+def make_plan(workflow_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> PlanVersionOut:
     wf = get_workflow(session, workflow_id, user_id)
     if wf.status == WorkflowStatus.CANCELLED.value or wf.paused:
         raise invalid_action("This workflow is paused or cancelled.")
@@ -197,7 +197,7 @@ def make_plan(workflow_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), se
 def patch_plan(
     plan_id: uuid.UUID, body: PlanPatch,
     if_match: str | None = Header(default=None),
-    user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session),
+    user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function"),
 ) -> PlanVersionOut:
     row = session.get(m.PlanVersion, plan_id)
     if row is None:
@@ -233,7 +233,7 @@ def patch_plan(
 @router.post("/workflows/{workflow_id}/actions", response_model=ProposedActionOut, response_model_by_alias=True, status_code=201)
 def propose_action(
     workflow_id: uuid.UUID, body: ProposeActionRequest,
-    user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session),
+    user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function"),
 ) -> ProposedActionOut:
     wf = get_workflow(session, workflow_id, user_id)
     plan = session.get(m.PlanVersion, body.plan_version_id)
@@ -247,7 +247,7 @@ def propose_action(
 @router.post("/workflows/{workflow_id}/replan", response_model=ReplanResponse, response_model_by_alias=True, dependencies=[Depends(rate_limit("model"))])
 def replan(
     workflow_id: uuid.UUID, body: ReplanRequest,
-    user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session),
+    user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function"),
 ) -> ReplanResponse:
     wf = get_workflow(session, workflow_id, user_id)
     if wf.status == WorkflowStatus.CANCELLED.value or wf.paused:
@@ -268,17 +268,17 @@ def replan(
 
 
 @router.post("/actions/{action_id}/approve", response_model=ProposedActionOut, response_model_by_alias=True)
-def approve_action(action_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> ProposedActionOut:
+def approve_action(action_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> ProposedActionOut:
     return mappers.action_out(actions.approve(session, user_id, action_id))
 
 
 @router.post("/actions/{action_id}/reject", response_model=ProposedActionOut, response_model_by_alias=True)
-def reject_action(action_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> ProposedActionOut:
+def reject_action(action_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> ProposedActionOut:
     return mappers.action_out(actions.reject(session, user_id, action_id))
 
 
 @router.post("/actions/{action_id}/execute", response_model=ProposedActionOut, response_model_by_alias=True)
-def execute_action(action_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> ProposedActionOut:
+def execute_action(action_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> ProposedActionOut:
     a = actions.execute(session, user_id, action_id)
     return mappers.action_out(a)
 
@@ -287,14 +287,14 @@ def execute_action(action_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user),
 
 
 @router.get("/workflows/{workflow_id}/tasks", response_model=list[TaskOut], response_model_by_alias=True)
-def list_tasks(workflow_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> list[TaskOut]:
+def list_tasks(workflow_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> list[TaskOut]:
     wf = get_workflow(session, workflow_id, user_id)
     rows = session.scalars(select(m.Task).where(m.Task.workflow_id == wf.id, m.Task.user_id == user_id).order_by(m.Task.created_at, m.Task.title)).all()
     return [mappers.task_out(session, t) for t in rows]
 
 
 @router.patch("/tasks/{task_id}", response_model=TaskOut, response_model_by_alias=True)
-def patch_task(task_id: uuid.UUID, body: TaskPatch, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> TaskOut:
+def patch_task(task_id: uuid.UUID, body: TaskPatch, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> TaskOut:
     t = get_owned(session, m.Task, task_id, user_id, "Task")
     wf = get_workflow(session, t.workflow_id, user_id)  # ownership + workflow relationship verified
     if body.status is not None and body.status.value != t.status:

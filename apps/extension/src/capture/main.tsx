@@ -1,12 +1,12 @@
 import "../styles.css";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
+import { CaptureError } from "./CaptureError";
 import { CapturePage } from "./CapturePage";
 
-const draftId = new URLSearchParams(window.location.search).get("draft");
+const params = new URLSearchParams(window.location.search);
+const error = params.get("error");
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <CapturePage draftId={draftId} />
-  </StrictMode>,
+  <StrictMode>{error ? <CaptureError reason={error} /> : <CapturePage draftId={params.get("draft")} />}</StrictMode>,
 );

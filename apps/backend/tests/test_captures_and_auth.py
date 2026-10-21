@@ -203,3 +203,23 @@ def test_cors_allows_web_origin_only(client):
         headers={"Origin": "https://evil.example", "Access-Control-Request-Method": "POST"},
     )
     assert "access-control-allow-origin" not in evil.headers
+
+
+def test_first_requests_race_creates_one_user_and_no_500s():
+    """After sign-in the web app fires several requests at once; each used to INSERT the same user."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from fastapi.testclient import TestClient
+
+    from app.main import create_app
+
+    app = create_app()
+
+    def hit(_i: int) -> int:
+        with TestClient(app, raise_server_exceptions=False) as c:
+            return c.get("/api/me", headers=auth("newcomer")).status_code
+
+    with ThreadPoolExecutor(12) as ex:
+        codes = list(ex.map(hit, range(12)))
+    assert codes == [200] * 12
+    assert _count(m.User) == 1

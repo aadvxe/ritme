@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     cloud_tasks_queue: str = ""
     worker_url: str = "http://localhost:8081"
     worker_audience: str = ""
+    tasks_invoker_service_account_email: str = ""
 
     @property
     def resolved_database_url(self) -> str:
@@ -69,10 +70,19 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> list[str]:
-        origins = [o.strip() for o in self.allowed_origins.split(",") if o.strip()]
+        import re
+        origins = [o.strip() for o in re.split(r"[,;|\s]+", self.allowed_origins) if o.strip()]
         if self.extension_id:
             origins.append(f"chrome-extension://{self.extension_id}")
         return origins
+
+    @property
+    def invoker_sa_email(self) -> str:
+        if self.tasks_invoker_service_account_email:
+            return self.tasks_invoker_service_account_email
+        if self.gcp_project_id:
+            return f"ritme-tasks-invoker@{self.gcp_project_id}.iam.gserviceaccount.com"
+        return ""
 
     @property
     def token_secret(self) -> str:

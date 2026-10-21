@@ -53,3 +53,12 @@ export function sentBodies(fetchMock: ReturnType<typeof stubFetch>) {
     .filter(([url]) => String(url).endsWith("/api/captures"))
     .map(([, init]) => JSON.parse(String(init?.body)) as Record<string, unknown>);
 }
+
+/** Shape of a draft as stored in chrome.storage.session (just the fields tests read). */
+export interface StoredDraft {
+  text: string;
+  sourceType: string;
+  domain: string | null;
+  pageTitle: string | null;
+  conversation: null | { app: string; messages: unknown[] };
+}

@@ -9,7 +9,8 @@ from dataclasses import dataclass
 
 import jwt
 from fastapi import Depends, Request
-from sqlalchemy import select
+from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from ..config import Settings, get_settings
@@ -41,17 +42,22 @@ def _bearer(request: Request) -> str:
 
 
 def upsert_user(session: Session, ident: firebase.FirebaseIdentity) -> User:
-    user = session.scalar(select(User).where(User.firebase_uid == ident.uid))
-    if user is None:
-        user = User(
-            firebase_uid=ident.uid, email=ident.email, display_name=ident.name, photo_url=ident.picture
-        )
-        session.add(user)
-        session.flush()
-    else:
-        user.email = ident.email or user.email
-        user.display_name = ident.name or user.display_name
-        user.photo_url = ident.picture or user.photo_url
+    """Create or refresh the user row. Race-safe: after sign-in the web app fires several requests at
+    once, and each would otherwise try to INSERT the same firebase_uid (unique violation, HTTP 500)."""
+    stmt = pg_insert(User).values(
+        firebase_uid=ident.uid, email=ident.email, display_name=ident.name, photo_url=ident.picture
+    )
+    stmt = stmt.on_conflict_do_update(
+        index_elements=[User.firebase_uid],
+        set_={
+            "email": func.coalesce(stmt.excluded.email, User.email),
+            "display_name": func.coalesce(stmt.excluded.display_name, User.display_name),
+            "photo_url": func.coalesce(stmt.excluded.photo_url, User.photo_url),
+        },
+    ).returning(User.id)
+    user_id = session.execute(stmt).scalar_one()
+    user = session.get(User, user_id)
+    assert user is not None
     return user
 
 
@@ -75,7 +81,7 @@ def _principal(request: Request, session: Session, settings: Settings) -> Princi
 
 
 def current_principal(
-    request: Request, session: Session = Depends(get_session), settings: Settings = Depends(get_settings)
+    request: Request, session: Session = Depends(get_session, scope="function"), settings: Settings = Depends(get_settings)
 ) -> Principal:
     principal = _principal(request, session, settings)
     request.state.user_id = principal.user_id

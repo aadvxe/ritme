@@ -18,3 +18,4 @@ test-results/
 *.pem
 *service-account*.json
 *-key.json
+.claude/launch.json

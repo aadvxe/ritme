@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button, Card, Field, Input, Spinner, Textarea, Wordmark } from "@ritme/design";
 import { openConnectPage } from "../lib/auth";
-import type { CaptureDraft } from "../lib/capture";
+import { updateConversation, type CaptureDraft } from "../lib/capture";
+import { includedCount } from "../lib/conversation";
+import { ConversationSection } from "./ConversationSection";
 import { MAX_CAPTURE_CHARS, MAX_PAGE_TITLE_CHARS } from "../config";
 import { CATEGORY_LABEL, detectSensitive } from "../lib/sensitive";
 import { getDraft, removeDraft, saveDraft } from "../lib/storage";
@@ -129,7 +131,9 @@ export function CapturePage({ draftId }: { draftId: string | null }) {
   const current = draft;
   const sensitiveCategory = detectSensitive(current.domain);
   const overLimit = current.text.length > MAX_CAPTURE_CHARS;
-  const hasText = current.text.trim().length > 0;
+  const conversation = current.conversation;
+  const hasText =
+    current.text.trim().length > 0 && (!conversation || conversation.textEdited || includedCount(conversation) > 0);
   const submitting = status.kind === "submitting";
   const needsConnect = connected === false || status.kind === "not_connected";
   const canSubmit = hasText && !overLimit && (sensitiveCategory === null || current.sensitiveConfirmed);
@@ -204,17 +208,31 @@ export function CapturePage({ draftId }: { draftId: string | null }) {
           </StatusNotice>
         )}
 
+        {conversation && (
+          <ConversationSection
+            conversation={conversation}
+            onChange={(patch) => setDraft((d) => (d && d !== "missing" ? updateConversation(d, patch) : d))}
+          />
+        )}
+
         <Field
           label="Text to save"
           htmlFor="capture-text"
-          hint="You can edit this. Only what's in this box is saved."
+          hint={conversation ? "This is exactly what will be saved. You can edit it." : "You can edit this. Only what's in this box is saved."}
           error={overLimit ? `This is ${current.text.length.toLocaleString()} characters; Ritme can save up to ${MAX_CAPTURE_CHARS.toLocaleString()}. Please shorten it. We won't cut it for you.` : undefined}
         >
           <Textarea
             id="capture-text"
             className="min-h-[160px]"
             value={current.text}
-            onChange={(e) => update({ text: e.target.value })}
+            onChange={(e) => {
+              const text = e.target.value;
+              setDraft((d) =>
+                d && d !== "missing"
+                  ? { ...d, text, conversation: d.conversation ? { ...d.conversation, textEdited: true } : null }
+                  : d,
+              );
+            }}
             aria-describedby={overLimit ? "capture-text-error" : "capture-text-hint"}
             aria-invalid={overLimit || undefined}
           />
@@ -231,8 +249,10 @@ export function CapturePage({ draftId }: { draftId: string | null }) {
               <SourceRow
                 label="Page title"
                 value={current.pageTitle.slice(0, MAX_PAGE_TITLE_CHARS)}
-                included={current.includeTitle}
+                included={current.includeTitle && !conversation?.hideNames}
                 onToggle={() => update({ includeTitle: !current.includeTitle })}
+                disabled={!!conversation?.hideNames}
+                note={conversation?.hideNames ? "Withheld while names are hidden." : undefined}
               />
             )}
             {current.url && (
@@ -321,7 +341,7 @@ export function CapturePage({ draftId }: { draftId: string | null }) {
   );
 }
 
-function Shell({ children }: { children: React.ReactNode }) {
+export function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="mx-auto w-full max-w-xl px-4 py-6">
       <header className="mb-5 space-y-1">
@@ -338,11 +358,15 @@ function SourceRow({
   value,
   included,
   onToggle,
+  note,
+  disabled,
 }: {
   label: string;
   value: string;
   included: boolean;
   onToggle: () => void;
+  note?: string;
+  disabled?: boolean;
 }) {
   return (
     <div className="flex items-start justify-between gap-3 rounded-xl border border-border bg-surface p-3">
@@ -350,8 +374,9 @@ function SourceRow({
         <p className="text-xs font-medium text-text-secondary">{label}</p>
         <p className={included ? "break-all text-sm text-text" : "break-all text-sm text-text-muted line-through"}>{value}</p>
         {!included && <p className="text-xs font-medium text-text-secondary">Not included</p>}
+        {note && <p className="text-xs text-text-secondary">{note}</p>}
       </div>
-      <Button variant="outline" size="sm" onClick={onToggle} aria-label={`${included ? "Remove" : "Add back"} ${label.toLowerCase()}`}>
+      <Button variant="outline" size="sm" onClick={onToggle} disabled={disabled} aria-label={`${included ? "Remove" : "Add back"} ${label.toLowerCase()}`}>
         {included ? "Remove" : "Add back"}
       </Button>
     </div>

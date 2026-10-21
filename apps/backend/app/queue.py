@@ -52,12 +52,15 @@ class CloudTasksQueue:
     def enqueue(self, run_id: uuid.UUID) -> None:
         s = self._settings
         parent = self._client.queue_path(s.gcp_project_id, s.gcp_region, s.cloud_tasks_queue)
+        oidc_token: dict[str, str] = {"audience": s.worker_audience or s.worker_url}
+        if s.invoker_sa_email:
+            oidc_token["service_account_email"] = s.invoker_sa_email
         task = {
             "name": f"{parent}/tasks/run-{run_id}",  # task name = idempotent enqueue
             "http_request": {
                 "http_method": self._tasks.HttpMethod.POST,
                 "url": f"{s.worker_url.rstrip('/')}/internal/runs/{run_id}",
-                "oidc_token": {"service_account_email": "", "audience": s.worker_audience or s.worker_url},
+                "oidc_token": oidc_token,
             },
         }
         self._client.create_task(parent=parent, task=task)

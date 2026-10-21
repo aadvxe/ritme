@@ -23,7 +23,7 @@ export default defineConfig(({ mode }) => {
     plugins: [react(), manifestPlugin(apiBase, webUrl)],
     build: {
       outDir: "dist",
-      emptyOutDir: true,
+      emptyOutDir: false,
       target: "es2022",
       modulePreload: { polyfill: false },
       rollupOptions: {

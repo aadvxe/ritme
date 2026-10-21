@@ -45,7 +45,7 @@ _ACTIVE = ("captured", "analyzing", "needs_input", "planning", "ready_for_approv
 
 
 @router.get("/dashboard", response_model=DashboardOut, response_model_by_alias=True)
-def dashboard(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> DashboardOut:
+def dashboard(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> DashboardOut:
     wfs = session.scalars(
         select(m.Workflow).where(m.Workflow.user_id == user_id, m.Workflow.status.in_(_ACTIVE)).order_by(m.Workflow.updated_at.desc()).limit(12)
     ).all()
@@ -99,7 +99,7 @@ def dashboard(user_id: uuid.UUID = Depends(web_user), session: Session = Depends
 @router.get("/calendar-overview", response_model=CalendarOverview, response_model_by_alias=True)
 def calendar_overview(
     from_: datetime = Query(alias="from"), to: datetime = Query(),
-    user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session),
+    user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function"),
 ) -> CalendarOverview:
     if from_.tzinfo is None or to.tzinfo is None:
         raise invalid_input("Dates need a time zone, for example 2026-10-18T00:00:00Z.")
@@ -110,17 +110,17 @@ def calendar_overview(
 
 
 @router.post("/knowledge/documents", response_model=KnowledgeDocOut, response_model_by_alias=True, status_code=201)
-def add_knowledge(body: KnowledgeDocCreate, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> KnowledgeDocOut:
+def add_knowledge(body: KnowledgeDocCreate, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> KnowledgeDocOut:
     return knowledge.add_document(session, user_id, body)
 
 
 @router.get("/knowledge/documents", response_model=list[KnowledgeDocOut], response_model_by_alias=True)
-def list_knowledge(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> list[KnowledgeDocOut]:
+def list_knowledge(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> list[KnowledgeDocOut]:
     return knowledge.list_documents(session, user_id)
 
 
 @router.delete("/knowledge/documents/{doc_id}", response_model=DeletionResult, response_model_by_alias=True)
-def delete_knowledge(doc_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> DeletionResult:
+def delete_knowledge(doc_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> DeletionResult:
     doc = get_owned(session, m.KnowledgeDocument, doc_id, user_id, "Document")
     chunks = session.scalar(select(func.count()).select_from(m.KnowledgeChunk).where(m.KnowledgeChunk.document_id == doc.id)) or 0
     session.delete(doc)  # chunks cascade
@@ -130,7 +130,7 @@ def delete_knowledge(doc_id: uuid.UUID, user_id: uuid.UUID = Depends(web_user), 
 
 
 @router.post("/knowledge/search", response_model=KnowledgeSearchResponse, response_model_by_alias=True, dependencies=[Depends(rate_limit("search"))])
-def search_knowledge(body: KnowledgeSearchRequest, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> KnowledgeSearchResponse:
+def search_knowledge(body: KnowledgeSearchRequest, user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> KnowledgeSearchResponse:
     return KnowledgeSearchResponse(results=knowledge.search(session, user_id, body.query, body.document_ids))
 
 
@@ -138,7 +138,7 @@ def search_knowledge(body: KnowledgeSearchRequest, user_id: uuid.UUID = Depends(
 
 
 @router.get("/privacy", response_model=PrivacyOverview, response_model_by_alias=True)
-def privacy(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session), settings: Settings = Depends(get_settings)) -> PrivacyOverview:
+def privacy(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function"), settings: Settings = Depends(get_settings)) -> PrivacyOverview:
     def count(model: type) -> int:
         return session.scalar(select(func.count()).select_from(model).where(model.user_id == user_id)) or 0  # type: ignore[attr-defined]
 
@@ -160,7 +160,7 @@ def privacy(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(g
 
 
 @router.get("/privacy/export")
-def export_all(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> dict[str, Any]:
+def export_all(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> dict[str, Any]:
     """Everything Ritme stores about you, as JSON."""
     from .routes_core import _prefs_out, build_detail  # noqa: PLC0415
 
@@ -182,7 +182,7 @@ def export_all(user_id: uuid.UUID = Depends(web_user), session: Session = Depend
 
 
 @router.delete("/privacy/account", response_model=DeletionResult, response_model_by_alias=True)
-def delete_account_data(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> DeletionResult:
+def delete_account_data(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> DeletionResult:
     return delete_all_user_data(session, user_id)
 
 
@@ -190,7 +190,7 @@ def delete_account_data(user_id: uuid.UUID = Depends(web_user), session: Session
 
 
 @router.post("/demo/reset", response_model=WorkflowSummary, response_model_by_alias=True, status_code=201)
-def reset_demo(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session)) -> WorkflowSummary:
+def reset_demo(user_id: uuid.UUID = Depends(web_user), session: Session = Depends(get_session, scope="function")) -> WorkflowSummary:
     wf = demo.reset_demo(session, user_id)
     run = create_run(session, user_id, wf.id, AgentRunTrigger.CAPTURE)
     summary = mappers.workflow_summary(wf)

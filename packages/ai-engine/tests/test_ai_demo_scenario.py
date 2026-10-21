@@ -27,7 +27,7 @@ async def extract_demo(engine: Engine):
 async def test_truth_board_has_friday_and_alignment_as_blockers(engine):
     out, meta = await extract_demo(engine)
     assert (meta.step, meta.prompt_version, meta.model) == (
-        EngineStep.EXTRACT, "extract.v1", "fake-fast",
+        EngineStep.EXTRACT, "extract.v2", "fake-fast",
     )  # fmt: skip
     by_id = {r.id: r for r in out.requirements}
 
@@ -137,5 +137,5 @@ async def test_prompt_versions_and_files_exist():
 
     for name in ("extract", "plan", "replan", "draft_clarification", "collab_guide"):
         system, version = build_system(name, {"today": "2026-10-19"})
-        assert version == f"{name}.v1"
+        assert version == ("extract.v2" if name == "extract" else f"{name}.v1")
         assert "Trust and safety policy" in system and "<parameters>" in system

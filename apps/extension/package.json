@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite build --watch",
-    "build": "tsc --noEmit && vite build",
+    "dev": "node scripts/dev.mjs",
+    "build": "node scripts/clean.mjs && tsc --noEmit && vite build && vite build --config vite.extract.config.ts",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src",
     "test": "vitest run --passWithNoTests",

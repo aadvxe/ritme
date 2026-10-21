@@ -1,68 +1,108 @@
-# Infrastructure (Google Cloud)
+# Infrastructure (Google Cloud Run + Cloud SQL)
 
-Status: **designed and scripted, NOT deployed.** `gcloud` is not installed on the development machine and no project
-has been provisioned, so nothing here has been run against real GCP. The exact manual steps are below.
-See `docs/gcp-architecture.md` for the diagram.
+## Architecture Overview
 
-## Resources
+- **Frontend**: Hosted on **Vercel** (`https://<your-app>.vercel.app`).
+- **Backend API**: Hosted on **Google Cloud Run** (`ritme-api`, public HTTPS).
+- **Database**: **Google Cloud SQL for PostgreSQL 16** (`asia-southeast2` Jakarta). Connected securely via Cloud Run's native unix domain socket (`/cloudsql/<INSTANCE_CONNECTION_NAME>`). No public database ports exposed to the internet.
+- **Worker / Queue**: Cloud Tasks (`ritme-runs`) triggering private Cloud Run worker (`ritme-worker`), or `RUN_QUEUE=local` for in-process async runs.
+- **Secrets**: Google Secret Manager (`ritme-db-password`, `ritme-extension-token-secret`).
+- **Migrations**: Cloud Run Job (`ritme-migrate`), running `alembic upgrade head` before traffic is directed to the backend.
+- **Inference**: Vertex AI (Gemini) in `VERTEX_LOCATION` (`us-central1`), authenticated via Application Default Credentials (ADC) on the Cloud Run runtime service account.
+- **Auth**: Firebase Auth (Google Sign-In), verified in backend using `firebase-admin` (ADC).
 
-| Concern | Service | Notes |
+---
+
+## Resources & Service Accounts
+
+| Resource / Role | Service | Purpose |
 |---|---|---|
-| Web + API (`ROLE=api`) | Cloud Run `ritme-api` (public) | Serves the built SPA and `/api`. One origin, so no CORS for the web app. |
-| Runs (`ROLE=worker`) | Cloud Run `ritme-worker` (**private**) | Only `ritme-tasks-invoker` has `run.invoker`. Handler also verifies the Cloud Tasks OIDC token. |
-| Queue | Cloud Tasks `ritme-runs` | Task name `run-<runId>` makes enqueue idempotent. Only the run id is sent, never content. |
-| Database | Cloud SQL for PostgreSQL, `asia-southeast2` | Reached through Cloud Run's built-in Cloud SQL connection (unix socket). No public authorized networks. Prefer private IP. |
-| LLM | Vertex AI (Gemini) | ADC via the runtime service account; no API keys. Model and location from env. |
-| Auth | Identity Platform / Firebase Auth (Google sign-in) | Backend verifies ID tokens with firebase-admin (ADC). |
-| Secrets | Secret Manager | `ritme-db-password`, `ritme-extension-token-secret`, mounted as env. |
-| Migrations | Cloud Run Job `ritme-migrate` | `alembic upgrade head`, run before traffic shifts. |
-| Build | Cloud Build → Artifact Registry | One image; role chosen by `ROLE`. |
-| Observability | Cloud Logging, Error Reporting, Monitoring | Logs are allowlisted fields only (see Privacy). |
+| `ritme-api` | Cloud Run (public) | FastAPI JSON API handling `/api/*` requests from Vercel frontend |
+| `ritme-worker` | Cloud Run (private) | Background worker executing LLM agent runs |
+| `ritme-migrate` | Cloud Run Job | Executes Alembic schema migrations against Cloud SQL |
+| `ritme-db` | Cloud SQL (PostgreSQL 16) | Primary persistent relational store |
+| `ritme-runs` | Cloud Tasks | Queue dispatching runs to worker via OIDC |
 
-## Service accounts (no key files anywhere)
+### IAM Roles (No Service Account Key Files Required)
+- `ritme-api`: `roles/cloudsql.client`, `roles/aiplatform.user`, `roles/cloudtasks.enqueuer`, `roles/secretmanager.secretAccessor` (on DB & extension secrets), `roles/iam.serviceAccountUser` (on `ritme-tasks-invoker`).
+- `ritme-worker`: `roles/cloudsql.client`, `roles/aiplatform.user`, `roles/secretmanager.secretAccessor`.
+- `ritme-tasks-invoker`: `roles/run.invoker` on `ritme-worker`.
 
-| Account | Roles |
-|---|---|
-| `ritme-api` | `cloudsql.client`, `aiplatform.user` (short sync steps), `cloudtasks.enqueuer`, `secretmanager.secretAccessor` on the two named secrets |
-| `ritme-worker` | `cloudsql.client`, `aiplatform.user`, `secretmanager.secretAccessor` on the two named secrets |
-| `ritme-tasks-invoker` | `run.invoker` on `ritme-worker` only |
+---
 
-## Region and where prompts are processed
+## How to Deploy
 
-- Cloud Run and Cloud SQL: `asia-southeast2` (Jakarta), to keep stored data in Indonesia.
-- Model inference runs in `VERTEX_LOCATION` (default `us-central1`). **Verify the chosen model's availability and quota in
-  the region you configure before relying on it.** Text a user chooses to capture is sent there to be analysed. The
-  Privacy page in the app states the configured location.
-- Nothing in the app or docs claims legal compliance. Preference data about how someone works can be sensitive personal
-  data; a formal legal review is outside the MVP scope.
+### Option A: Using Google Cloud Shell (Recommended, 0 Local Setup)
 
-## Manual steps (what `infra/deploy.sh` automates)
+Google Cloud Shell is a free browser-based shell with `gcloud`, `git`, and `bash` pre-configured.
 
-1. Create/choose a GCP project, enable billing, then `gcloud auth login` and `gcloud config set project <ID>`.
-2. Create a Cloud SQL Postgres 16 instance `ritme-db` in `asia-southeast2`, database `ritme`, user `ritme`; store the
-   password in Secret Manager as `ritme-db-password`.
-3. Create a random signing key and store it as `ritme-extension-token-secret`.
-4. In Firebase console: add the project, enable **Google** sign-in, add the deployed domain to authorized domains.
-5. Export `GCP_PROJECT_ID`, `ALLOWED_ORIGINS` (the `ritme-api` URL), `EXTENSION_ID`, run `bash infra/deploy.sh`.
-6. Build the frontend with the Firebase web config (`VITE_FIREBASE_*`, public values) before building the image.
-7. Set a billing budget alert and review Vertex AI quotas.
-8. Set `MIN_INSTANCES=1` before a scheduled demo to avoid cold starts.
+1. Open [Google Cloud Shell](https://shell.cloud.google.com).
+2. Clone your repository (or upload your repo folder):
+   ```bash
+   git clone <YOUR_GIT_REPO_URL>
+   cd <REPO_NAME>
+   ```
+3. Set your project ID and Vercel frontend URL, then execute `deploy.sh`:
+   ```bash
+   export GCP_PROJECT_ID="your-gcp-project-id"
+   export ALLOWED_ORIGINS="https://your-app.vercel.app"
+   bash infra/deploy.sh
+   ```
+4. The script automatically:
+   - Enables all needed APIs (Cloud Run, Cloud SQL, Secret Manager, Cloud Build, Artifact Registry, Vertex AI).
+   - Provisions the PostgreSQL 16 Cloud SQL instance `ritme-db` in `asia-southeast2` (if it does not exist).
+   - Generates strong credentials and saves them to Secret Manager (`ritme-db-password` & `ritme-extension-token-secret`).
+   - Builds the backend Docker container via Cloud Build using [infra/Dockerfile.backend](file:///c:/Users/Rangga/Documents/Project/Hackaton2/infra/Dockerfile.backend).
+   - Runs database migrations via Cloud Run Job (`ritme-migrate`).
+   - Deploys the public `ritme-api` Cloud Run service with Cloud SQL unix socket mounted and Vercel CORS origins enabled.
+   - Outputs the deployed Cloud Run API URL (e.g., `https://ritme-api-xxxxx-as.a.run.app`).
 
-## Rollback
+---
 
-Cloud Run keeps revisions: `gcloud run services update-traffic ritme-api --to-revisions=<previous>=100`. Migrations are
-forward-only; write a down-migration before shipping a destructive one.
+### Option B: Using Windows PowerShell (Local Machine)
 
-## Logs and retention
+If you have Google Cloud SDK (`gcloud`) installed locally:
 
-Cloud Logging's default bucket retains logs for 30 days; set the retention you want on the `_Default` bucket
-(`gcloud logging buckets update _Default --location=global --retention-days=<N>`). The application only logs request ID,
-route, method, status, duration, error type/code and workflow/action/run IDs. It never logs request bodies, captured
-text, notes, preferences, tokens or prompts (`apps/backend/app/logging.py`, covered by `test_hardening.py`). Optional model
-request/response logging stays disabled.
+1. Open PowerShell in the project root:
+   ```powershell
+   gcloud auth login
+   gcloud config set project your-gcp-project-id
+   ```
+2. Run the deployment script:
+   ```powershell
+   .\infra\deploy.ps1 -ProjectId "your-gcp-project-id" -AllowedOrigins "https://your-app.vercel.app"
+   ```
 
-## Correctness on multiple instances
+---
 
-Exactly-once execution lives in the database: compare-and-set `approved → executing`, a unique idempotency key per user,
-deterministic task ids and a unique `(created_by_action_id, draft_id)` constraint. The per-instance rate limiter only
-protects against bursts; no workflow state is held in memory.
+## Connecting Vercel Frontend to Cloud Run Backend
+
+1. **Vercel Environment Variables**:
+   In your Vercel Dashboard -> **Project Settings** -> **Environment Variables**, configure:
+   - `VITE_API_BASE_URL` = `https://ritme-api-xxxxx-as.a.run.app` (your Cloud Run API URL)
+   - `VITE_FIREBASE_API_KEY` = your Firebase web API key
+   - `VITE_FIREBASE_AUTH_DOMAIN` = your Firebase auth domain
+   - `VITE_FIREBASE_PROJECT_ID` = your Firebase project ID
+   - `VITE_FIREBASE_APP_ID` = your Firebase app ID
+   - `VITE_USE_AUTH_EMULATOR` = `false`
+
+2. **Firebase Authorized Domains**:
+   In [Firebase Console](https://console.firebase.google.com) -> **Authentication** -> **Settings** -> **Authorized domains**:
+   - Ensure your Vercel domain (`your-app.vercel.app`) is listed.
+   - Ensure any custom domains are listed.
+
+3. **Trigger Redeploy on Vercel**:
+   Go to **Deployments** on Vercel -> **Redeploy** to build with the new environment variables.
+
+---
+
+## Verifying Deployment
+
+1. Test API health endpoint:
+   ```bash
+   curl https://ritme-api-xxxxx-as.a.run.app/healthz
+   # Expected response: {"status":"ok","role":"api"}
+   ```
+2. Open your Vercel web application in the browser:
+   - Log in with Google.
+   - Navigate to Dashboard and verify data loads from Cloud SQL.

@@ -92,6 +92,14 @@ export const en = {
     ],
     signingIn: "Opening sign-in…",
     signInFailed: "We couldn't sign you in",
+    local: {
+      title: "Local test sign-in",
+      note: "For local development only. It talks to the Firebase Auth emulator on this machine, so nothing leaves it. If the email is new, a test account is created. There is no Google account involved.",
+      email: "Email",
+      password: "Password",
+      submit: "Sign in (local test)",
+      signingIn: "Signing in…",
+    },
   },
 
   welcome: {

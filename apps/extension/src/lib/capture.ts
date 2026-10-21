@@ -1,4 +1,7 @@
 import type { CaptureCreate } from "@ritme/api-client";
+import { MAX_CAPTURE_CHARS } from "../config";
+import type { ExtractedMessage } from "../extract/types";
+import { buildTranscript, fitToLimit, type DraftConversation } from "./conversation";
 
 export type DraftSourceType = "browser_selection" | "manual_text";
 
@@ -20,6 +23,8 @@ export interface CaptureDraft {
   includeUrl: boolean;
   includeDomain: boolean;
   note: string;
+  /** Set for captures read from a supported chat/mail app; null for plain selected text. */
+  conversation: DraftConversation | null;
   /** Per-capture confirmation for sensitive domains. Never carried over to another draft. */
   sensitiveConfirmed: boolean;
   /** Fingerprint of the last payload we attempted to send (without the key). */
@@ -32,6 +37,7 @@ export interface DraftSource {
   sourceType: DraftSourceType;
   pageTitle?: string | null;
   url?: string | null;
+  conversation?: { app: string; chatTitle: string | null; messages: ExtractedMessage[]; capped: boolean };
 }
 
 /** http(s) only; strips credentials and the #fragment. Anything else is treated as "no URL". */
@@ -66,11 +72,25 @@ export function captureUrl(draftId: string): string {
 export function createDraft(source: DraftSource): CaptureDraft {
   const url = cleanUrl(source.url);
   const title = source.pageTitle?.trim() || null;
+  const conversation: DraftConversation | null = source.conversation
+    ? fitToLimit(
+        {
+          app: source.conversation.app,
+          chatTitle: source.conversation.chatTitle,
+          messages: source.conversation.messages.map((m) => ({ ...m, included: true })),
+          hideNames: false,
+          capped: source.conversation.capped,
+          autoExcluded: 0,
+          textEdited: false,
+        },
+        MAX_CAPTURE_CHARS,
+      )
+    : null;
   return {
     draftId: crypto.randomUUID(),
     idempotencyKey: crypto.randomUUID(),
     sourceType: source.sourceType,
-    text: source.text,
+    text: conversation ? buildTranscript(conversation) : source.text,
     pageTitle: title,
     url,
     domain: domainFromUrl(url),
@@ -78,6 +98,7 @@ export function createDraft(source: DraftSource): CaptureDraft {
     includeUrl: url !== null,
     includeDomain: url !== null,
     note: "",
+    conversation,
     sensitiveConfirmed: false,
     attemptFingerprint: null,
     createdAt: new Date().toISOString(),
@@ -96,7 +117,8 @@ export function buildPayload(draft: CaptureDraft): CaptureCreate {
     sourceType: draft.sourceType,
     sourceUrl: draft.includeUrl ? draft.url : null,
     sourceDomain: draft.includeDomain ? draft.domain : null,
-    sourcePageTitle: draft.includeTitle ? draft.pageTitle : null,
+    // While names are hidden the chat title (often a person's name) is withheld too.
+    sourcePageTitle: draft.includeTitle && !draft.conversation?.hideNames ? draft.pageTitle : null,
     userNote: note ? note : null,
   };
 }
@@ -106,4 +128,11 @@ export function fingerprint(draft: CaptureDraft): string {
   const payload: Partial<CaptureCreate> = buildPayload(draft);
   delete payload.idempotencyKey;
   return JSON.stringify(payload);
+}
+
+/** Applies a conversation change (include/exclude, hide names) and rebuilds the transcript unless the user edited the text by hand. */
+export function updateConversation(draft: CaptureDraft, patch: Partial<DraftConversation>): CaptureDraft {
+  if (!draft.conversation) return draft;
+  const conversation = { ...draft.conversation, ...patch };
+  return { ...draft, conversation, text: conversation.textEdited ? draft.text : buildTranscript(conversation) };
 }

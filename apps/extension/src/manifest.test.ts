@@ -13,8 +13,8 @@ function extensionIdFromKey(base64Key: string): string {
 }
 
 describe("manifest", () => {
-  it("requests exactly contextMenus, activeTab and storage", () => {
-    expect([...manifest.permissions].sort()).toEqual(["activeTab", "contextMenus", "storage"]);
+  it("requests exactly contextMenus, activeTab, storage and scripting", () => {
+    expect([...manifest.permissions].sort()).toEqual(["activeTab", "contextMenus", "scripting", "storage"]);
     expect(manifest.permissions).toEqual([...ALLOWED_PERMISSIONS]);
   });
 
@@ -24,11 +24,17 @@ describe("manifest", () => {
     expect(manifest).not.toHaveProperty("optional_host_permissions");
     expect(manifest).not.toHaveProperty("content_scripts");
     expect(manifest).not.toHaveProperty("web_accessible_resources");
-    expect(raw).not.toMatch(/history|webRequest|tabs"|scripting|<all_urls>|\*:\/\/\*\/\*/);
+    expect(raw).not.toMatch(/history|webRequest|"tabs"|<all_urls>|webNavigation|cookies|declarativeNetRequest|\*:\/\/\*\/\*/);
   });
 
-  it("limits host_permissions to the API origin", () => {
+  it("limits host_permissions to the API origin (no chat or mail app hosts)", () => {
     expect(manifest.host_permissions).toEqual([`${API_ORIGIN}/*`]);
+    expect(JSON.stringify(manifest.host_permissions)).not.toMatch(/whatsapp|telegram|slack|google|microsoft|outlook|office/);
+  });
+
+  it("declares a keyboard command and no static content scripts", () => {
+    expect(manifest.commands["capture-conversation"].suggested_key.default).toBe("Alt+Shift+R");
+    expect(manifest).not.toHaveProperty("content_scripts");
   });
 
   it("limits externally_connectable to the web origin", () => {

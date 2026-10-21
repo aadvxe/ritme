@@ -76,7 +76,7 @@ All counts are measured; the runner prints numerators and denominators. Latest r
 ## Negative controls
 
 `--negative-control guards-off | random-task-ids | no-approval-gate` breaks one safeguard in-process and exits
-0 only if the evals notice. Last verified: `guards-off` fails 10 scenarios, `random-task-ids` fails #12,
+0 only if the evals notice. Last verified: `guards-off` fails 11 scenarios, `random-task-ids` fails #12,
 `no-approval-gate` fails #1 — so a green run is not vacuous.
 
 ## Live mode

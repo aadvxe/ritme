@@ -65,6 +65,12 @@ export function installChromeMock(extensionId = "testextensionid") {
       getCurrent: vi.fn(async () => ({ id: 99 })),
       remove: vi.fn<(id: number) => Promise<void>>(async () => undefined),
     },
+    scripting: {
+      executeScript: vi.fn<(injection: unknown) => Promise<Array<{ result?: unknown }>>>(async () => {
+        throw new Error("executeScript not stubbed");
+      }),
+    },
+    commands: { onCommand: event<[string]>() },
     contextMenus: {
       create: vi.fn<(props: chrome.contextMenus.CreateProperties) => string>(() => "id"),
       removeAll: vi.fn(async () => undefined),
