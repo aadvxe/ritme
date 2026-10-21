@@ -158,16 +158,27 @@ export function createFirebaseBackend(): AuthBackend {
 /* ---------------------------------------------------------------- provider */
 
 function friendlySignInError(e: unknown): string {
+  console.error("Firebase sign-in error details:", e);
   const code = (e as { code?: string } | null)?.code ?? "";
+  const msg = (e as Error | null)?.message ?? "";
   if (code === "auth/popup-closed-by-user" || code === "auth/cancelled-popup-request") {
     return "The sign-in window was closed before it finished. You can try again whenever you like.";
   }
   if (code === "auth/popup-blocked") return "Your browser blocked the sign-in window. Allow pop-ups for this site and try again.";
+  if (code === "auth/unauthorized-domain") {
+    return "This domain (ritme-sigma.vercel.app) is not authorized in Firebase. Please add 'ritme-sigma.vercel.app' in Firebase Console > Authentication > Settings > Authorized domains.";
+  }
+  if (code === "auth/operation-not-allowed") {
+    return "Google Sign-In is not enabled. In Firebase Console > Authentication > Sign-in method, click 'Google' and enable it.";
+  }
+  if (code === "auth/configuration-not-found") {
+    return "Firebase Authentication is not initialized yet. In Firebase Console > Authentication, click 'Get started'.";
+  }
   if (code === "auth/wrong-password") return "That email already has a local test account with a different password.";
   if (code === "auth/invalid-email") return "That does not look like an email address.";
   if (code === "auth/weak-password") return "Use a password of at least 6 characters.";
   if (code === "auth/network-request-failed") return "Could not reach the sign-in service. Check your connection and try again.";
-  return "Sign-in did not work this time. Nothing was changed. Please try again.";
+  return code ? `Sign-in failed (${code}). Please check your Firebase Console settings.` : (msg || "Sign-in did not work this time. Nothing was changed. Please try again.");
 }
 
 export function AuthProvider({ children, backend, localSignIn }: { children: ReactNode; backend?: AuthBackend; localSignIn?: boolean }) {
