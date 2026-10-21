@@ -6,15 +6,14 @@ It talks to the backend only through `@ritme/api-client`.
 ## Run it
 
 ```bash
-# Everything in the browser: fake API + fake sign-in. No backend, no Firebase, no account.
-VITE_USE_MOCK_API=true pnpm --filter @ritme/frontend dev        # http://localhost:5173
+# Against the backend (default http://localhost:8080 or deployed Cloud Run URL)
+pnpm --filter @ritme/frontend dev
 
-# Against the real backend (default http://localhost:8080) and the Firebase Auth emulator
+# Against the backend with local Firebase Auth emulator
 pnpm infra:auth                                                  # repo root, once
 VITE_USE_AUTH_EMULATOR=true pnpm --filter @ritme/frontend dev
 ```
 
-On Windows PowerShell set the variable first (`$env:VITE_USE_MOCK_API="true"`) or put it in `apps/frontend/.env.local`.
 See `.env.example` for every variable. All `VITE_` values are public.
 
 | Variable | Meaning |

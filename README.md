@@ -1,128 +1,146 @@
 # Ritme
 
-Your work, made clear, on your terms. A worker-owned, private, non-chat assistant for neurodivergent workers:
-capture work text on purpose → Truth Board (facts / assumptions / blockers) → clarify → preference-shaped plan →
-approve → tasks created **and verified** → "Something changed" → Before/After → approve.
+> **Your work, made clear, on your terms.**  
+> *The worker-owned, private, non-chat AI assistant designed specifically for neurodivergent professionals.*
+
 
 ---
 
-## Architecture & Layout
+## 💡 The Problem: The Cognitive Crisis in Knowledge Work
+
+Modern workplaces inundate knowledge workers with scattered, ambiguous messages across Slack, Teams, email, and meetings. 
+
+For **neurodivergent professionals** (ADHD, Autism, Executive Dysfunction), this environment presents severe friction:
+- **Executive Dysfunction & Task Paralysis**: Vague requests like *"Can you take a look at the proposal by Friday?"* hide unspoken expectations and unverified assumptions.
+- **Cognitive Exhaustion from Chatbots**: Most AI productivity tools rely on open-ended conversational chat interfaces that demand even *more* writing, prompt engineering, and conversational energy.
+- **Loss of Trust in Autonomous Agents**: Autonomous tools often hallucinate or execute destructive updates without explicit oversight.
+
+---
+
+## ⚡ The Solution: A Non-Chat, Deterministic Clarity Engine
+
+**Ritme** is a cognitive accessibility tool engineered to transform chaotic work communication into calm, structured, preference-shaped execution.
+
+Instead of an endless chat thread, Ritme delivers a **visual, deterministic clarity loop**:
 
 ```text
-apps/frontend       React + Vite + Tailwind (Deployed on Vercel)
-apps/backend        FastAPI + SQLAlchemy/Alembic (Deployed on Google Cloud Run)
-apps/extension      Chrome MV3 capture extension
-packages/ai-engine  Vertex AI (Gemini) engine library: steps, prompts, guards, FakeLlm
-packages/contracts  Pydantic contracts (single source of truth) → JSON Schema
-packages/api-client Generated TypeScript types + typed fetch client
-packages/design     Tailwind preset + shared UI primitives
-infra/              Dockerfiles, Cloud Build, deployment scripts, Cloud SQL & Cloud Run config
-docs/               Architecture, API specifications, and infrastructure documentation
-evals/              Evaluation benchmarks and test scenarios
-```
-
-- **Frontend**: Hosted on **Vercel** (`https://<your-app>.vercel.app`).
-- **Backend**: Hosted on **Google Cloud Run** (`ritme-api`, public HTTPS).
-- **Database**: **Google Cloud SQL (PostgreSQL 16)** in `asia-southeast2` (Jakarta), connected privately via Cloud Run's native unix domain socket. No database ports exposed to the public internet.
-- **Queue / Async Runs**: Cloud Tasks (`ritme-runs`) triggering private Cloud Run worker (`ritme-worker`), or `RUN_QUEUE=local` for in-process async runs.
-- **Secrets**: Google Secret Manager (`ritme-db-password`, `ritme-extension-token-secret`).
-- **Auth**: Firebase Auth (Google Sign-In) verified with `firebase-admin` (Application Default Credentials).
-
----
-
-## Deployment (Cloud Run + Cloud SQL)
-
-The frontend is hosted on **Vercel** while the backend and database run on **Google Cloud**.
-
-### 1. Deploy Backend to Cloud Run & Cloud SQL
-
-#### Option A: Via Google Cloud Shell (Recommended — 0 Local Setup)
-Open [Google Cloud Shell](https://shell.cloud.google.com), clone your repository, and run:
-```bash
-export GCP_PROJECT_ID="your-gcp-project-id"
-export ALLOWED_ORIGINS="https://your-frontend.vercel.app"
-
-bash infra/deploy.sh
-```
-
-#### Option B: Via Windows PowerShell
-If you have `gcloud` installed locally on Windows:
-```powershell
-gcloud auth login
-gcloud config set project your-gcp-project-id
-
-.\infra\deploy.ps1 -ProjectId "your-gcp-project-id" -AllowedOrigins "https://your-frontend.vercel.app"
-```
-
-The script automatically:
-1. Enables necessary GCP APIs (`run`, `sqladmin`, `artifactregistry`, `cloudbuild`, `secretmanager`, `aiplatform`).
-2. Provisions PostgreSQL 16 on Cloud SQL (`ritme-db`) and creates database `ritme`.
-3. Generates and stores credentials in Secret Manager (`ritme-db-password`).
-4. Builds the lean backend container via Cloud Build using `infra/Dockerfile.backend`.
-5. Executes database migrations via Cloud Run Job (`alembic upgrade head`).
-6. Deploys the FastAPI service to Cloud Run with native Cloud SQL socket attachment and CORS origins allowed.
-
-### 2. Connect Your Vercel Frontend
-
-After deployment, take the Cloud Run URL (e.g. `https://ritme-api-xxxxx-as.a.run.app`) and configure Vercel:
-
-1. **Vercel Environment Variables** (Project Settings → Environment Variables):
-   - `VITE_API_BASE_URL` = `https://ritme-api-xxxxx-as.a.run.app`
-   - `VITE_USE_AUTH_EMULATOR` = `false`
-   - `VITE_FIREBASE_API_KEY` = `<your-firebase-api-key>`
-   - `VITE_FIREBASE_AUTH_DOMAIN` = `<your-firebase-auth-domain>`
-   - `VITE_FIREBASE_PROJECT_ID` = `<your-firebase-project-id>`
-   - `VITE_FIREBASE_APP_ID` = `<your-firebase-app-id>`
-2. **Firebase Authorized Domains** ([Firebase Console](https://console.firebase.google.com/) → Authentication → Settings → Authorized domains):
-   - Add your Vercel domain (`your-frontend.vercel.app`).
-3. **Redeploy on Vercel** to apply the new API URL.
-
-For detailed architecture diagrams and IAM role breakdowns, see [docs/infrastructure.md](file:///c:/Users/Rangga/Documents/Project/Hackaton2/docs/infrastructure.md).
-
----
-
-## Local Development (No GCP Needed)
-
-```bash
-cp .env.example .env
-pnpm install
-uv sync --all-packages
-pnpm infra:up          # Postgres on localhost:5433
-pnpm db:migrate
-pnpm infra:auth        # Firebase Auth emulator (separate terminal)
-pnpm dev               # api :8080, worker :8081, web :5173
-```
-
-- `LLM_PROVIDER=fake` (default) uses the deterministic FakeLlm.
-- For live Gemini in development, set `LLM_PROVIDER=vertex`, `GCP_PROJECT_ID`, `VERTEX_LOCATION`, and run `gcloud auth application-default login`.
-- Windows note: if `uv` cannot create its Python link, run once with `UV_PYTHON_DOWNLOADS=never` and `uv sync --all-packages --python <path to 3.12>`.
-
----
-
-## Verification & Checks
-
-```bash
-pnpm lint && pnpm typecheck && pnpm test      # TypeScript + Python
-uv run pytest                                  # Python only (needs Postgres from pnpm infra:up)
-pnpm contracts:check                           # generated TS types match Pydantic contracts
+Messy Work Communication (Slack, Teams, Email, Docs)
+                        ↓
+            Intentional Capture
+                        ↓
+     The Truth Board (Facts • Assumptions • Blockers)
+                        ↓
+       Clarify (Answer or defer blocker cards)
+                        ↓
+     Preference-Shaped Plan (Shaped by your focus rhythms)
+                        ↓
+    Deterministic Approval Gate (You hold the keys)
+                        ↓
+  Verified Task Execution (Created & confirmed in external tools)
+                        ↓
+"Something Changed" Engine (Before/After delta diffs when priorities shift)
 ```
 
 ---
 
-## Demo Path
+## 🏆 Key Innovations: Why Ritme Wins
 
-Sign in → Dashboard → **Try the demo** (`POST /api/demo/reset`, clearly labelled demo data) → the Canvas shows the Truth
-Board with "Friday" and "everyone is aligned" as blocker cards → answer or defer → plan → **Approve** → Verified task IDs →
-**Something changed** → Before/After → approve → reload to see it resume → Privacy page.
+### 1. Anti-Chat Design: Cognitive Ergonomics First
+Ritme replaces text-heavy conversational AI with **spatial clarity**: structured cards, interactive timelines, and clear decisions. Users never have to ask *"What should I prompt next?"*—the interface guides them through explicit, digestible steps.
 
-The same journey is automated in `apps/backend/tests/test_journey.py` against the real engine with the FakeLlm.
+### 2. The Truth Board: Dissecting Ambiguity
+Ritme instantly decomposes unstructured requests into three distinct visual categories:
+- 🟢 **Facts**: Explicitly confirmed requirements, deadlines, and context.
+- 🟡 **Assumptions**: Unverified expectations that introduce project risks.
+- 🔴 **Blockers**: Critical missing pieces that require clarification.
+
+### 3. Neuro-Inclusive, Preference-Shaped Planning
+No two brains operate the same. Ritme generates execution plans tailored directly to the worker's cognitive profile:
+- Custom focus block durations (e.g., 25m sprints vs. deep work blocks).
+- Built-in transition buffers to prevent context-switching fatigue.
+- Energy-level curve matching (e.g., placing heavy analytical tasks during peak morning focus).
+
+### 4. Zero Unapproved Writes & Verifiable Action
+Autonomy without control is dangerous. Ritme implements an ironclad **Deterministic Approval Gate**:
+- No external task, message, or calendar event is ever modified without explicit, itemized user sign-off.
+- Every executed action is independently verified against destination APIs before marking it complete.
+
+### 5. The "Something Changed" Engine
+When a project deadline shifts or a scope change lands in chat, typical plans collapse. Ritme’s adaptive engine computes a clean **Before/After visual diff**, showing exactly what needs to adjust and letting the worker approve the changes with zero overwhelm.
+
+### 6. Radical Privacy & Worker Ownership
+- **You own your workspace**: Your work preferences and notes belong strictly to you—never exposed to employer tracking.
+- **Privacy-by-Design**: Zero persistent retention of prompts on model servers; only allowlisted operational telemetry is stored.
 
 ---
 
-## Status and Limitations
+## 🛠️ Enterprise Cloud Architecture
 
-- **Frontend**: React + Vite + Tailwind SPA deployed on Vercel.
-- **Backend & Database**: FastAPI on Google Cloud Run with Google Cloud SQL (PostgreSQL 16).
-- **Extension & AI Engine**: Built with Vertex AI (Gemini) integration with deterministic fallback (`FakeLlm`).
-- **Security & Privacy**: No service account key files used anywhere (ADC only). Cloud SQL is connected via private unix domain sockets without public internet exposure. Logs contain allowlisted fields only (no prompts, notes, or captured text logged).
-- **Compliance**: Not legal advice; no formal regulatory compliance claims (see PDP note in the spec §3).
+Ritme is engineered for reliability, scalability, and security using a modern Google Cloud and Vercel stack:
+
+```text
+┌────────────────────────────────────────────────────────┐
+│                   Vercel Global Edge                   │
+│         React 19 + TypeScript + Tailwind CSS           │
+│        				(Client SPA)                     │
+└───────────────────────────┬────────────────────────────┘
+                            │ HTTPS / JWT Auth
+                            ▼
+┌────────────────────────────────────────────────────────┐
+│                   Google Cloud Run                     │
+│               FastAPI High-Performance API             │
+│        (State Machines, Contract Guards, Routes)       │
+└─────────────┬────────────────────────────┬─────────────┘
+              │                            │
+   Unix Domain Socket (Private)            │ Vertex AI API (ADC)
+              ▼                            ▼
+┌───────────────────────────┐ ┌──────────────────────────┐
+│     Google Cloud SQL      │ │ Google Vertex AI Engine  │
+│       PostgreSQL 16       │ │      Gemini Models       │
+│  (ACID, Idempotency Keys) │ │(Structured JSON Schema)  │
+└───────────────────────────┘ └──────────────────────────┘
+```
+
+- **Frontend on Vercel**: Lightning-fast global delivery for the responsive Clarity Canvas.
+- **Cloud Run API (`ritme-api`)**: Fully managed serverless containers scaling with zero cold-start bottlenecks.
+- **Cloud SQL PostgreSQL**: Enterprise-grade relational store with strict transactional isolation and zero public internet exposure (connected via native unix domain sockets).
+- **Google Vertex AI**: Powered by Gemini models leveraging structured output enforcement through Pydantic contracts and rigorous guardrails.
+- **Google Secret Manager**: Zero hardcoded secrets; runtime identity managed via Application Default Credentials (ADC).
+
+---
+
+## 📂 System Monorepo
+
+```text
+apps/
+  ├── frontend/         React 19 + Vite + Tailwind (GMera Solusi design system)
+  ├── backend/          FastAPI + SQLAlchemy/Alembic (Domain engine & state machines)
+  └── extension/        Chrome MV3 extension for intentional text & transcript capture
+packages/
+  ├── ai-engine/        Vertex AI (Gemini) integration with structured prompt guardrails
+  ├── contracts/        Single source of truth Pydantic contracts → JSON Schema
+  ├── api-client/       Generated TypeScript client ensuring end-to-end type safety
+  └── design/           Design tokens, color semantics, and accessibility primitives
+infra/                  Cloud Run, Cloud SQL, and Secret Manager deployment pipelines
+docs/                   Architecture diagrams, API specs, and technical notes
+evals/                  Deterministic evaluation benchmarks and safety test suites
+```
+
+---
+
+## 🌍 The Real-World User Journey
+
+1. **Capture**: While reading a complex project brief or confusing Slack exchange, the user highlights the text and clicks **Capture to Ritme** via the browser extension.
+2. **Deconstruct**: Ritme reads the input and populates the **Truth Board** with identified facts, assumptions, and blockers.
+3. **Clarify**: The user answers or defers blockers in seconds with single clicks.
+4. **Plan**: Ritme synthesizes the clarified context into an actionable, realistic plan shaped around the worker's personalized focus schedule.
+5. **Approve**: The user reviews each proposed action and clicks **Approve**—tasks are generated and automatically verified.
+6. **Adapt**: When an urgent Slack message shifts the deadline, the user drops it into **"Something Changed"** to review the Before/After delta comparison and update their schedule calmly.
+
+---
+
+## 🎯 Vision & Impact
+
+Neurodiversity is not a deficit—it is a cognitive difference that traditional corporate tools fail to accommodate. 
+
+By eliminating the cognitive tax of open-ended conversational AI, enforcing radical privacy, and giving workers deterministic control over their plans, **Ritme transforms executive dysfunction into an organized, stress-free superpower.**
